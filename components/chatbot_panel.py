@@ -1,95 +1,83 @@
-"""Mock chatbot response, confidence, and quiz routing."""
-
-import time
+"""Conversation thread for mock answers, quizzes, and learning feedback."""
 
 import streamlit as st
 
 from components.mock_data import MOCK_ANSWER, MOCK_CONFIDENCE, MOCK_EVIDENCE
-from components.quiz_panel import render_quiz_panel
+from components.quiz_panel import render_quiz_messages
 
 
-def _reset_quiz_state() -> None:
-    """Reset quiz results whenever a new question is submitted."""
-    st.session_state.quiz_submitted = False
-    st.session_state.quiz_is_correct = False
-    st.session_state.selected_option = None
-    st.session_state.retry_quiz_visible = False
-    st.session_state.retry_quiz_submitted = False
-    st.session_state.retry_quiz_is_correct = False
-    for widget_key in ("quiz_option", "retry_option"):
-        st.session_state.pop(widget_key, None)
-
-
-def _confidence_label(score: float) -> str:
-    if score >= 0.80:
-        return "High confidence"
-    if score >= 0.60:
-        return "Medium confidence"
-    return "Low confidence"
-
-
-def render_chatbot_panel(selected_text: str, confidence_threshold: float) -> None:
-    """Render the chatbot interaction and conditionally display its quiz."""
-    st.header("💬 Learning Chatbot")
-    st.markdown("#### Nội dung đang được sử dụng")
-    if selected_text.strip():
-        st.info(selected_text)
-    else:
-        st.warning("Chưa có đoạn nội dung nào được chọn.")
-
-    question = st.text_input(
-        "Câu hỏi của bạn",
-        key="question_input",
-        placeholder="Ví dụ: Vì sao overfitting làm mô hình dự đoán kém?",
-        disabled=not selected_text.strip(),
-    )
-
-    can_ask = bool(selected_text.strip() and question.strip())
-    ask_clicked = st.button(
-        "Ask chatbot",
-        type="primary",
-        use_container_width=True,
-        disabled=not can_ask,
-    )
-    if not can_ask:
-        st.caption("Nhập đủ đoạn nội dung và câu hỏi để gửi cho chatbot.")
-
-    if ask_clicked:
-        with st.spinner("Đang phân tích đoạn văn và câu hỏi..."):
-            time.sleep(0.6)
-
-        st.session_state.user_question = question.strip()
-        st.session_state.answer_generated = True
-        st.session_state.mock_answer = MOCK_ANSWER
-        st.session_state.confidence = MOCK_CONFIDENCE
-        _reset_quiz_state()
-
-    if not st.session_state.answer_generated:
+def _consume_submission(
+    submission: dict[str, object] | None,
+    confidence_threshold: float,
+) -> None:
+    """Convert a new document-popover event into a mock conversation turn."""
+    if not submission:
         return
 
-    st.divider()
-    st.subheader("Câu trả lời")
-    st.write(st.session_state.mock_answer)
+    event_id = str(submission.get("event_id", ""))
+    selected_text = str(submission.get("selected_text", "")).strip()
+    question = str(submission.get("question", "")).strip()
+    if not event_id or not selected_text or not question:
+        return
+    if event_id == st.session_state.last_submission_id:
+        return
 
-    confidence = float(st.session_state.confidence)
-    metric_col, status_col = st.columns([1, 1.4])
-    with metric_col:
-        st.metric("Answer confidence", f"{confidence:.0%}")
-    with status_col:
-        st.markdown("**Mức độ tin cậy**")
-        st.write(_confidence_label(confidence))
-    st.progress(confidence)
+    st.session_state.last_submission_id = event_id
+    st.session_state.chat_turns.append(
+        {
+            "id": event_id,
+            "selected_text": selected_text,
+            "question": question,
+            "answer": MOCK_ANSWER,
+            "evidence": MOCK_EVIDENCE,
+            "confidence": MOCK_CONFIDENCE,
+            "quiz_visible": MOCK_CONFIDENCE >= confidence_threshold,
+            "quiz_answer": None,
+            "quiz_is_correct": False,
+            "retry_answer": None,
+            "retry_is_correct": False,
+        }
+    )
 
-    with st.expander("Evidence đối chiếu", expanded=True):
-        st.write(MOCK_EVIDENCE)
 
-    # Re-evaluate on every rerun so the sidebar threshold takes effect immediately.
-    st.session_state.quiz_visible = confidence >= confidence_threshold
-    if st.session_state.quiz_visible:
-        render_quiz_panel()
-    else:
-        st.warning(
-            f"Confidence {confidence:.0%} chưa đạt ngưỡng {confidence_threshold:.0%}; "
-            "hệ thống chưa tạo quiz."
+def _render_empty_thread() -> None:
+    with st.chat_message("assistant", avatar="🧭"):
+        st.markdown("**Chào bạn! Mình sẵn sàng cùng bạn đọc tài liệu.**")
+        st.write(
+            "Bôi đen một đoạn ở khung bên trái, nhập câu hỏi vào popup rồi gửi. "
+            "Câu trả lời và bài kiểm tra ngắn sẽ xuất hiện tại đây."
         )
 
+
+def _render_turn(turn: dict[str, object]) -> None:
+    with st.chat_message("user", avatar="🙂"):
+        st.write(str(turn["question"]))
+        st.caption("Đã gửi từ đoạn nội dung bạn bôi đen trong tài liệu")
+
+    with st.chat_message("assistant", avatar="🧭"):
+        st.write(str(turn["answer"]))
+        st.markdown(f"> **Đối chiếu trong tài liệu:** {turn['evidence']}")
+
+    if turn.get("quiz_visible", False):
+        render_quiz_messages(turn)
+
+
+def render_chatbot_panel(
+    submission: dict[str, object] | None,
+    confidence_threshold: float,
+) -> None:
+    """Render the full learning flow as one chronological chat thread."""
+    _consume_submission(submission, confidence_threshold)
+
+    with st.container(height=656, border=True):
+        st.markdown(
+            "<div class='chat-heading'><span>Chat Thread</span>"
+            "<small>Trợ giảng mô phỏng · phản hồi tức thì</small></div>",
+            unsafe_allow_html=True,
+        )
+
+        if not st.session_state.chat_turns:
+            _render_empty_thread()
+        else:
+            for turn in st.session_state.chat_turns:
+                _render_turn(turn)
