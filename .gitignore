@@ -1,6 +1,12 @@
 .DS_Store
 node_modules/
 *.env
-tmp_mining*
-.env
+.venv/
 __pycache__/
+*.py[cod]
+.streamlit/secrets.toml
+codebase/
+eval/runtime_traces.jsonl
+.pytest_cache/
+demo-slides/
+eval/live_call_traces.jsonl

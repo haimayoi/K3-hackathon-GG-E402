@@ -1,3 +1,7 @@
+# HISTORICAL CP2 BRIEF — NOT THE CANONICAL IMPLEMENTATION
+
+> This file preserves the original mock-only design brief. Fixed `MOCK_CONFIDENCE`, `MOCK_ANSWER`, and static retry values described below are not used by canonical `app.py`. Current behavior is documented in `README.md` and `spec.md`.
+
 # Codex Task — Build Streamlit Learning Chatbot Flow Prototype
 
 ## 1. Mục tiêu

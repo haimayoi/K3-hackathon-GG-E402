@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="./pdfjs/pdf_viewer.css" />
     <style>
       :root {
         color-scheme: light;
@@ -13,7 +14,7 @@
         --soft: #f6f8fb;
         --accent: #635bff;
         --accent-dark: #5148e5;
-        --selection: #dcd9ff;
+        --selection: rgba(99, 91, 255, .24);
       }
 
       * { box-sizing: border-box; }
@@ -94,35 +95,111 @@
         font-weight: 600;
       }
 
+      .selection-actions {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .ask-page {
+        padding: 8px 11px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .ask-page:hover { background: var(--accent-dark); }
+      .ask-page:disabled { cursor: not-allowed; opacity: .45; }
+
+
+      .clear-selection {
+        display: none;
+        padding: 7px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--accent-dark);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .clear-selection.visible { display: inline-flex; }
+      .clear-selection:hover { background: #eeecff; }
+
       .document-scroll {
+        position: relative;
+        display: grid;
         height: 570px;
-        overflow-y: auto;
-        scrollbar-color: #cfd5df transparent;
-        scrollbar-width: thin;
+        place-items: center;
+        overflow: hidden;
+        background: #dfe3e9;
+        touch-action: pan-y;
+        overscroll-behavior: contain;
+        outline: none;
       }
 
-      article {
-        max-width: 720px;
-        margin: 0 auto;
-        padding: 42px 46px 96px;
-        cursor: text;
-        font-family: inherit;
-        font-size: 18px;
-        line-height: 1.82;
+      .document-scroll:focus-visible {
+        box-shadow: inset 0 0 0 3px rgba(99, 91, 255, .35);
       }
 
-      article p { margin: 0 0 24px; }
-      article::selection, article *::selection { background: var(--selection); }
+      .pdf-stage {
+        position: relative;
+        box-shadow: 0 8px 28px rgba(23, 32, 51, .16);
+      }
+
+      .pdf-stage canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .pdf-stage .textLayer {
+        z-index: 2;
+        user-select: text;
+        -webkit-user-select: text;
+      }
+
+      .pdf-stage .textLayer span {
+        user-select: text;
+        -webkit-user-select: text;
+      }
+
+      .pdf-stage .textLayer ::selection {
+        background: var(--selection);
+        color: rgba(23, 32, 51, .92);
+      }
+
+      .page-status {
+        position: absolute;
+        z-index: 4;
+        right: 14px;
+        bottom: 14px;
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: rgba(23, 32, 51, .82);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        pointer-events: none;
+      }
+
       ::highlight(active-passage) {
-        background: #ccc8ff;
-        color: inherit;
+        background: var(--selection);
+        color: rgba(23, 32, 51, .92);
       }
 
       .selection-overlay {
         position: absolute;
         z-index: 2;
         border-radius: 3px;
-        background: #ccc8ff;
+        background: var(--selection);
         pointer-events: none;
         mix-blend-mode: multiply;
       }
@@ -236,11 +313,19 @@
             <h1 id="document-title"></h1>
           </div>
         </div>
-        <span class="selection-hint">Bôi đen để đặt câu hỏi</span>
+        <div class="selection-actions">
+          <span class="selection-hint">B&#244;i &#273;en &#273;o&#7841;n v&#259;n &#273;&#7875; &#273;&#7863;t c&#226;u h&#7887;i</span>
+          <button class="ask-page" id="ask-page" type="button">H&#7887;i v&#7873; trang n&#224;y</button>
+          <button class="clear-selection" id="clear-selection" type="button">B&#7887; ch&#7885;n</button>
+        </div>
       </header>
 
-      <div class="document-scroll" id="document-scroll">
-        <article id="document" tabindex="0"></article>
+      <div class="document-scroll" id="document-scroll" tabindex="0" role="region" aria-label="Cu&#7897;n &#273;&#7875; chuy&#7875;n trang slide">
+        <div class="pdf-stage" id="pdf-stage">
+          <canvas id="pdf-canvas"></canvas>
+          <div class="textLayer" id="text-layer"></div>
+        </div>
+        <span class="page-status" id="page-status"></span>
       </div>
 
       <form class="popover" id="popover">
@@ -258,21 +343,37 @@
       </form>
     </section>
 
-    <script>
+    <script type="module">
+      import * as pdfjsLib from "./pdfjs/pdf.mjs";
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "./pdfjs/pdf.worker.mjs";
       const API_VERSION = 1;
       const viewer = document.getElementById("viewer");
       const scroller = document.getElementById("document-scroll");
-      const article = document.getElementById("document");
+      const article = document.getElementById("text-layer");
+      const pdfStage = document.getElementById("pdf-stage");
+      const pdfCanvas = document.getElementById("pdf-canvas");
       const title = document.getElementById("document-title");
       const popover = document.getElementById("popover");
       const question = document.getElementById("question");
       const send = document.getElementById("send");
       const close = document.getElementById("close");
+      const clearSelectionButton = document.getElementById("clear-selection");
+      const askPageButton = document.getElementById("ask-page");
+      const pageStatus = document.getElementById("page-status");
 
       let selectedText = "";
       let anchorRect = null;
       let selectedRange = null;
       let lastPayload = "";
+      let currentPage = 1;
+      let pageCount = 1;
+      let wheelAccumulator = 0;
+      let navigationLocked = false;
+      let touchStartY = null;
+      let pageTexts = [];
+      let pdfDocument = null;
+      let currentPdfPayload = "";
+      let renderGeneration = 0;
 
       function post(type, payload = {}) {
         window.parent.postMessage({ isStreamlitMessage: true, type, ...payload }, "*");
@@ -287,6 +388,16 @@
         question.value = "";
         send.disabled = true;
         if (clearSelection) window.getSelection()?.removeAllRanges();
+      }
+
+      function clearActiveSelection() {
+        hidePopover(true);
+        selectedText = "";
+        selectedRange = null;
+        anchorRect = null;
+        window.CSS?.highlights?.delete("active-passage");
+        clearOverlayHighlight();
+        clearSelectionButton.classList.remove("visible");
       }
 
       function clearOverlayHighlight() {
@@ -311,6 +422,7 @@
 
       function persistHighlight(range) {
         selectedRange = range.cloneRange();
+        clearSelectionButton.classList.add("visible");
         if (window.CSS?.highlights && window.Highlight) {
           CSS.highlights.set("active-passage", new Highlight(selectedRange));
           clearOverlayHighlight();
@@ -334,7 +446,10 @@
 
       function captureSelection() {
         const selection = window.getSelection();
-        if (!selection || selection.isCollapsed || !selection.rangeCount) return;
+        if (!selection || selection.isCollapsed || !selection.rangeCount) {
+          clearActiveSelection();
+          return;
+        }
         const range = selection.getRangeAt(0);
         if (!article.contains(range.commonAncestorContainer)) return;
         const text = selection.toString().replace(/\s+/g, " ").trim();
@@ -347,26 +462,134 @@
         setTimeout(() => question.focus(), 0);
       }
 
-      function renderDocument(args) {
-        const payload = JSON.stringify([args.title, args.document]);
+      function base64ToBytes(encoded) {
+        const binary = atob(encoded);
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) {
+          bytes[index] = binary.charCodeAt(index);
+        }
+        return bytes;
+      }
+
+      async function loadPdf(encoded) {
+        if (!encoded || encoded === currentPdfPayload) return;
+        currentPdfPayload = encoded;
+        pdfDocument = await pdfjsLib.getDocument({ data: base64ToBytes(encoded) }).promise;
+      }
+
+      async function renderPdfPage(pageNumber) {
+        if (!pdfDocument) return;
+        const generation = ++renderGeneration;
+        const pdfPage = await pdfDocument.getPage(pageNumber);
+        const unscaled = pdfPage.getViewport({ scale: 1 });
+        const availableWidth = Math.max(100, scroller.clientWidth - 24);
+        const availableHeight = Math.max(100, scroller.clientHeight - 24);
+        const scale = Math.min(availableWidth / unscaled.width, availableHeight / unscaled.height);
+        const viewport = pdfPage.getViewport({ scale });
+        if (generation !== renderGeneration) return;
+
+        const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+        pdfStage.style.width = `${viewport.width}px`;
+        pdfStage.style.height = `${viewport.height}px`;
+        pdfStage.style.setProperty("--total-scale-factor", viewport.scale);
+        pdfCanvas.width = Math.floor(viewport.width * outputScale);
+        pdfCanvas.height = Math.floor(viewport.height * outputScale);
+        pdfCanvas.style.width = `${viewport.width}px`;
+        pdfCanvas.style.height = `${viewport.height}px`;
+        const context = pdfCanvas.getContext("2d", { alpha: false });
+        await pdfPage.render({
+          canvasContext: context,
+          viewport,
+          transform: outputScale === 1 ? null : [outputScale, 0, 0, outputScale, 0, 0],
+        }).promise;
+        if (generation !== renderGeneration) return;
+
+        article.replaceChildren();
+        const textContent = await pdfPage.getTextContent();
+        const textLayer = new pdfjsLib.TextLayer({
+          textContentSource: textContent,
+          container: article,
+          viewport,
+        });
+        await textLayer.render();
+      }
+
+      async function renderDocument(args) {
+        const pageNumber = Math.max(1, Number(args.page) || 1);
+        currentPage = pageNumber;
+        pageCount = Math.max(currentPage, Number(args.page_count) || 1);
+        pageStatus.textContent = `${currentPage} / ${pageCount}`;
+        pageTexts = Array.isArray(args.page_texts) ? args.page_texts : [];
+        const payload = JSON.stringify([args.title, pageNumber, pageCount, args.pdf_base64?.length]);
         if (payload === lastPayload) return;
         lastPayload = payload;
         title.textContent = args.title || "Tài liệu học tập";
-        article.replaceChildren();
-        selectedRange = null;
-        window.CSS?.highlights?.delete("active-passage");
-        clearOverlayHighlight();
-        String(args.document || "")
-          .split(/\n\s*\n/)
-          .filter(Boolean)
-          .forEach((paragraph) => {
-            const node = document.createElement("p");
-            node.textContent = paragraph.trim();
-            article.appendChild(node);
+        clearActiveSelection();
+        selectedText = String(pageTexts[currentPage - 1] || "").replace(/\s+/g, " ").trim();
+        askPageButton.disabled = !selectedText;
+        await loadPdf(args.pdf_base64);
+        await renderPdfPage(currentPage);
+      }
+      async function navigatePage(delta) {
+        if (navigationLocked) return;
+        const target = Math.max(1, Math.min(pageCount, currentPage + delta));
+        if (target === currentPage) return;
+        navigationLocked = true;
+        currentPage = target;
+        pageStatus.textContent = `${currentPage} / ${pageCount}`;
+        clearActiveSelection();
+        selectedText = String(pageTexts[currentPage - 1] || "").replace(/\s+/g, " ").trim();
+        askPageButton.disabled = !selectedText;
+        try {
+          await renderPdfPage(currentPage);
+          post("streamlit:setComponentValue", {
+            value: {
+              event_id: `navigation-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+              page: currentPage,
+            },
           });
-        hidePopover(true);
+        } finally {
+          navigationLocked = false;
+        }
+      }
+      scroller.addEventListener("wheel", (event) => {
+        event.preventDefault();
+        wheelAccumulator += event.deltaY;
+        if (Math.abs(wheelAccumulator) < 70) return;
+        navigatePage(wheelAccumulator > 0 ? 1 : -1);
+        wheelAccumulator = 0;
+      }, { passive: false });
+
+      scroller.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowDown" || event.key === "PageDown") {
+          event.preventDefault();
+          navigatePage(1);
+        } else if (event.key === "ArrowUp" || event.key === "PageUp") {
+          event.preventDefault();
+          navigatePage(-1);
+        }
+      });
+
+      scroller.addEventListener("touchstart", (event) => {
+        touchStartY = event.changedTouches[0]?.clientY ?? null;
+      }, { passive: true });
+
+      scroller.addEventListener("touchend", (event) => {
+        if (touchStartY === null) return;
+        const distance = touchStartY - (event.changedTouches[0]?.clientY ?? touchStartY);
+        touchStartY = null;
+        if (Math.abs(distance) >= 45) navigatePage(distance > 0 ? 1 : -1);
+      }, { passive: true });
+
+
+      function openPageQuestion() {
+        if (!selectedText) return;
+        positionPopover({ left: viewer.clientWidth - 200, width: 0, top: 70, bottom: 70 });
+        popover.classList.add("visible");
+        setTimeout(() => question.focus(), 0);
       }
 
+      askPageButton.addEventListener("click", openPageQuestion);
       article.addEventListener("mouseup", () => setTimeout(captureSelection, 0));
       article.addEventListener("keyup", () => setTimeout(captureSelection, 0));
       scroller.addEventListener("scroll", () => {
@@ -391,7 +614,12 @@
         }
       });
 
-      close.addEventListener("click", () => hidePopover(true));
+      close.addEventListener("click", clearActiveSelection);
+      clearSelectionButton.addEventListener("click", clearActiveSelection);
+      viewer.addEventListener("mousedown", (event) => {
+        if (!selectedRange || popover.contains(event.target) || article.contains(event.target)) return;
+        clearActiveSelection();
+      });
       popover.addEventListener("submit", (event) => {
         event.preventDefault();
         const text = question.value.trim();
@@ -401,6 +629,7 @@
             event_id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
             selected_text: selectedText,
             question: text,
+            page: currentPage,
           },
         });
         hidePopover(true);
