@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:14:31.094758+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-022",
+  "page_number": 18,
+  "selected_text_sha256": "ed76501c0d7c758f2f04f0a76f785e9f483294b194f2f6e0a2b37c0cd3b6fafd",
+  "question": "Giải thích chi tiết cơ chế attention trong video.",
+  "status": "error",
+  "latency_ms": 280,
+  "parse_validation": "not_started",
+  "citation_validation": "not_started",
+  "error": "provider_http_429:quota_exceeded"
+}

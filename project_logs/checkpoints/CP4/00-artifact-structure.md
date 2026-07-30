@@ -1,0 +1,12 @@
+# CP4.0 — Cấu trúc artifact chuẩn
+- Thời điểm: 2026-07-30 (Asia/Saigon)
+- Mục tiêu: Có đủ evidence, eval, validation, reflection, demo và project_logs mà không di chuyển code đang chạy.
+- Hiện trạng trước khi làm: evidence/eval/project_logs đã có từ CP3; validation/reflection/demo chưa tồn tại.
+- Thay đổi đã thực hiện: Tạo ba folder còn thiếu bằng placeholder; giữ app.py và components tại root và sẽ ghi README là codebase.
+- File thay đổi: validation/.gitkeep, reflection/.gitkeep, demo/.gitkeep, report này.
+- Command/test đã chạy: kiểm tra tồn tại folder; python -m compileall app.py components; git diff --check; git status --short.
+- Kết quả: Đủ 6 folder bắt buộc; compile app/components PASS; git diff --check PASS.
+- Bằng chứng/đường dẫn artifact: evidence/, eval/, validation/, reflection/, demo/, project_logs/.
+- Vấn đề còn lại: Placeholder sẽ được thay bằng template CP5/CP6; codebase vẫn ở root có chủ đích.
+- Trạng thái: PASS
+- Bước tiếp theo: Test cấu trúc rồi hoàn thiện evidence/impact.

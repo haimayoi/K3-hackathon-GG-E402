@@ -1,0 +1,12 @@
+# CP4.3 — README và runbook
+- Thời điểm: 2026-07-30 (Asia/Saigon)
+- Mục tiêu: README nêu project status, real/mock, setup, run/test/mining/eval, privacy và blocker.
+- Hiện trạng trước khi làm: README chỉ chứa source of truth chung của ban tổ chức.
+- Thay đổi đã thực hiện: Thêm project submission section ở đầu và giữ nguyên tài liệu gốc dưới heading riêng.
+- File thay đổi: README.md, report này.
+- Command/test đã chạy: kiểm tra các command/path bắt buộc; import app/PDF smoke; git diff --check; git status --short.
+- Kết quả: Đủ command/path/runbook; app import PASS; PDF 23 trang; git diff --check PASS. Streamlit bare-mode chỉ in warning expected.
+- Bằng chứng/đường dẫn artifact: README.md.
+- Vấn đề còn lại: Con người cần xác nhận tên/mã/phân công và naming mismatch; .venv install từng timeout PyPI.
+- Trạng thái: PASS
+- Bước tiếp theo: Test runbook rồi soát rubric/security để đóng CP4.

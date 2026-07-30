@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:16:25.896190+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-015",
+  "page_number": 4,
+  "selected_text_sha256": "4c9813d1942d1e9b55f292797128ecce4d1a5c449249e16bfbac952f5a1c2302",
+  "question": "Chỉ tôi làm.",
+  "status": "insufficient_context",
+  "latency_ms": 3102,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

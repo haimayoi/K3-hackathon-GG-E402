@@ -1,5 +1,126 @@
 # Mini Hackathon AI — Batch 03
 
+## Bài nộp hiện tại — VLearn Grounded Learning Check
+
+Lát cắt: Khi học viên đang đọc slide và hỏi về đoạn vừa bôi đen, hệ thống quyết định có đủ
+căn cứ để giải thích và tạo quiz hay cần hỏi lại/từ chối, để học viên nhận ra mức hiểu thật.
+
+### Trạng thái checkpoint
+
+| Mốc | Trạng thái | Bằng chứng |
+|---|---|---|
+| CP1 | PARTIAL / chưa có Canvas và tên willing users trong repo | spec.md §1–§2, §8 |
+| CP2 | PASS ở mức flow mock bấm được | app.py, components/ |
+| CP3 | PARTIAL / BLOCKED_BY_API_QUOTA + quality bar chưa đạt | project_logs/checkpoints/CP3/CP3-CHECKPOINT-REPORT.md |
+| CP4 | IN PROGRESS | project_logs/checkpoints/CP4/ |
+| CP5 | PLAN ONLY | project_logs/checkpoint-plans/CP5-PLAN.md |
+| CP6 | PLAN ONLY | project_logs/checkpoint-plans/CP6-PLAN.md |
+
+### Thành viên và phân công
+
+Tên workspace và branch không khớp nên không tự suy đoán danh tính.
+
+| Phần | Người phụ trách |
+|---|---|
+| Spec | [CẦN ĐIỀN TÊN + MÃ HV] |
+| Evidence | [CẦN ĐIỀN TÊN + MÃ HV] |
+| Prompt/eval | [CẦN ĐIỀN TÊN + MÃ HV] |
+| Code | [CẦN ĐIỀN TÊN + MÃ HV] |
+| Demo/validation | [CẦN ĐIỀN TÊN + MÃ HV] |
+
+### Phần thật và phần mock
+
+- Thật trong code: PDF extraction/render/selection, page_number, structured validation,
+  citation match, Gemini REST adapter, trace sanitize, eval/mining runner.
+- Đã chứng minh Gemini call thật; run 001 có đủ 24 dòng nhưng còn quota ERROR và chưa đạt bar.
+- Mock: ba TEST_CASES trong components/mock_data.py chỉ dùng khi USE_MOCK_LLM=true và UI
+  hiện nhãn Mock mode. Không dùng mock làm kết quả eval chính thức.
+- Mức khai báo: Mock có adapter AI thật ở lõi, không phải Working.
+
+### Cấu trúc project
+
+| Đường dẫn | Vai trò |
+|---|---|
+| app.py, components/ | Codebase Streamlit và custom document selector |
+| models/, services/, prompts/ | Contract, provider, learning engine và prompt |
+| tests/ | Unit tests |
+| evidence/ | Mining method, aggregate, examples ngắn, impact |
+| eval/ | Golden set, protocol, trace sanitize, run artifacts |
+| validation/, demo/, reflection/ | Template/kế hoạch CP5–CP6 |
+| project_logs/ | Command history, decisions, milestone reports |
+
+Không di chuyển app.py/components vào codebase/ vì rủi ro làm hỏng app; đây là codebase được
+ghi rõ theo cho phép của master prompt.
+
+### Cài đặt và chạy
+
+Python 3.10 trở lên. PowerShell:
+
+    python -m venv .venv
+    .\.venv\Scripts\Activate.ps1
+    python -m pip install -r requirements.txt
+    Copy-Item .env.example .env
+
+Điền GEMINI_API_KEY trong .env hoặc environment cục bộ; không commit .env. Ứng dụng hiện
+đọc environment variables trực tiếp, vì vậy nếu dùng file .env thì cần nạp biến vào shell
+hoặc công cụ chạy trước khi start.
+
+Chạy app:
+
+Trong web, mở **Cấu hình AI** để nhập Gemini API key cho riêng session hiện tại và chọn model.
+Key không được ghi vào file hay trace. App cũng hỗ trợ `GEMINI_API_KEY` hoặc `GOOGLE_API_KEY`
+từ `.env`; model mặc định hiện tại là `gemini-3.5-flash`.
+
+    python -m streamlit run app.py
+
+Chạy demo mock tường minh:
+
+    $env:USE_MOCK_LLM='true'
+    python -m streamlit run app.py
+
+Chạy unit tests và compile:
+
+    python -m pytest -q
+    python -m compileall app.py components services models scripts
+
+Chạy mining và tạo lại golden set:
+
+    python scripts/mine_review_concept.py
+    python scripts/build_golden_set.py
+
+Chạy eval thật:
+
+    $env:LLM_PROVIDER='gemini'
+    $env:LLM_MODEL='gemini-3.5-flash'
+    $env:GEMINI_API_KEY='YOUR_KEY'
+    $env:USE_MOCK_LLM='false'
+    python scripts/run_eval.py --run-id run-001
+
+Nếu thiếu key, runner trả exit 2 và chỉ tạo BLOCKED_BY_API_KEY.md, không tạo bảng giả.
+
+### Reports
+
+- CP3: project_logs/checkpoints/CP3/CP3-CHECKPOINT-REPORT.md
+- CP4: project_logs/checkpoints/CP4/CP4-CHECKPOINT-REPORT.md
+- Final: project_logs/FINAL-STATUS-CP3-CP6.md
+
+### Data privacy, naming và hạn chế
+
+- data/vlearn-pack chỉ dùng cục bộ; không copy raw pack sang evidence/eval.
+- Artifact chỉ dùng aggregate, ID ẩn danh và excerpt tối đa 180 ký tự.
+- Trace lưu hash selected text, không lưu key, authorization header hay full selected text.
+- Không commit .env, API key, .venv, cache hoặc runtime log.
+- Workspace là DAY05_2A202601587_LeHaHaiVan nhưng branch là
+  2A202601465---Ha_Duyen_Hung; chưa có tên nhóm/thành viên trong README gốc. Con người phải
+  xác nhận trước khi nộp; repo không tự gán danh tính.
+- Known limitations: eval chưa đạt bar và còn quota ERROR, chưa có OCR cho page ảnh, chưa có
+  validation người dùng, research tương tự và demo dry run; rule-based eval là proxy và
+  không thay human review.
+
+---
+
+## Tài liệu gốc của ban tổ chức
+
 **SPEC → Prototype → Demo.** Đây không phải cuộc thi code — đây là cuộc thi **tư duy sản phẩm AI**.
 
 - Thời lượng: **1,5 ngày** (một ngày build + một buổi demo)

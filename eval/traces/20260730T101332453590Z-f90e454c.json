@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:13:32.453590+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-001",
+  "page_number": 14,
+  "selected_text_sha256": "3e31d4c753861788c75a4070084824e8304f1a568239eb31f778db73468aa9f1",
+  "question": "Temperature dùng để làm gì?",
+  "status": "grounded",
+  "latency_ms": 4182,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

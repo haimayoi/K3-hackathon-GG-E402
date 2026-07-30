@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:13:52.748988+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-004",
+  "page_number": 6,
+  "selected_text_sha256": "611532ad5418e2b93c42c6a34bc16d743e6cfcdc9b701dbab6dc5756bfc1b4bc",
+  "question": "Vì sao hai hướng này chạm trần?",
+  "status": "grounded",
+  "latency_ms": 5197,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:14:27.073677+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-013",
+  "page_number": 2,
+  "selected_text_sha256": "5d8b585194c97a91f8d4d94688591d3351840577bd0f196d6abc5e4f41ed9f86",
+  "question": "Trả lời.",
+  "status": "error",
+  "latency_ms": 405,
+  "parse_validation": "not_started",
+  "citation_validation": "not_started",
+  "error": "provider_http_429:quota_exceeded"
+}

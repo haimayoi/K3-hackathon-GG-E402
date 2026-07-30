@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:14:08.793018+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-007",
+  "page_number": 12,
+  "selected_text_sha256": "d469e8430e65a7d30744c5673db3b35dce4c004733f8bb528c92df875bf08056",
+  "question": "Ba yếu tố giúp AlexNet thành công là gì?",
+  "status": "grounded",
+  "latency_ms": 4544,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

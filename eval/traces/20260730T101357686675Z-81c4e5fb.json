@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:13:57.686675+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-005",
+  "page_number": 8,
+  "selected_text_sha256": "40028eb58ced20e45ec0351ab81a8a2293d163c38430f5adde5d3dc22817b223",
+  "question": "Expert systems đổi chiến lược như thế nào?",
+  "status": "insufficient_context",
+  "latency_ms": 4939,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:14:30.356695+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-019",
+  "page_number": 9,
+  "selected_text_sha256": "a64fa4fcc8b9938b4804633c1e9ccacf6ce81d5159534b1ff09d662691e6a4b3",
+  "question": "Tạo quiz kiểm tra nguyên nhân khó mở rộng.",
+  "status": "error",
+  "latency_ms": 1417,
+  "parse_validation": "not_started",
+  "citation_validation": "not_started",
+  "error": "provider_http_429:quota_exceeded"
+}

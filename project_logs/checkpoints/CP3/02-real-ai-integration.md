@@ -1,0 +1,21 @@
+# CP3.2 — Tích hợp AI thật vào luồng hiện tại
+- Thời điểm: 2026-07-30 (Asia/Saigon)
+- Mục tiêu: Nối provider thật, structured parser, trace và UI conditional vào flow CP2.
+- Hiện trạng trước khi làm: Chatbot đọc trực tiếp TEST_CASES; frontend không gửi page; không có trace/failure path.
+- Thay đổi đã thực hiện:
+  - Gemini REST adapter cấu hình qua environment; không log key/header.
+  - Learning engine dùng chung cho UI/eval; parse strict, validate citation, graceful error.
+  - Trace JSON sanitize gồm hash selected text, không lưu selected text hay key.
+  - Frontend gửi page_number của page-card chứa selection.
+  - UI hiển thị spinner, status/citation/quiz; không confidence; có retry khi lỗi.
+  - Mock data chỉ dùng khi USE_MOCK_LLM=true và UI hiện nhãn Mock mode.
+  - Targeted misconception feedback theo đáp án sai.
+- File thay đổi: services/, .env.example, app.py, components/chatbot_panel.py, components/quiz_panel.py, components/document_selector_frontend/index.html, tests/test_learning_engine.py, requirements.txt.
+- Command/test đã chạy: pytest -q; compileall; missing-key smoke; git diff --check; git status --short.
+- Kết quả:
+  - Lượt đầu FAIL: chatbot_panel bị quote corruption và pytest thiếu repo root; failure được ghi nhận.
+  - Sau sửa: compile PASS; 7 unit tests PASS; missing-key path trả error/BLOCKED_BY_API_KEY và tạo trace sanitize; git diff --check PASS.
+- Bằng chứng/đường dẫn artifact: services/ai_client.py, services/learning_engine.py, eval/traces/, tests/test_learning_engine.py.
+- Vấn đề còn lại: Chưa có GEMINI_API_KEY nên chưa thể chứng minh một AI call thật.
+- Trạng thái: PARTIAL
+- Bước tiếp theo: Chạy test, ghi kết quả; sau đó mining và golden set.

@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:17:16.547359+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-024",
+  "page_number": 43,
+  "selected_text_sha256": "6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b",
+  "question": "Probe là gì?",
+  "status": "error",
+  "latency_ms": 703,
+  "parse_validation": "not_started",
+  "citation_validation": "not_started",
+  "error": "provider_http_429:quota_exceeded"
+}

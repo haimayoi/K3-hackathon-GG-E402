@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T09:49:27.471647+00:00",
+  "provider": "gemini",
+  "model": "gemini-2.5-flash",
+  "case_event_id": "1785404966984-1d0727415b5998",
+  "page_number": 1,
+  "selected_text_sha256": "202e29ffaac422e4a620d4dfd444406b98ab22e990972698a39d72bd04a3c943",
+  "question": "Vì sao hệ chuyên gia tạo ra giá trị nhưng vẫn dẫn đến mùa đông AI lần 2?",
+  "status": "error",
+  "latency_ms": 430,
+  "parse_validation": "not_started",
+  "citation_validation": "not_started",
+  "error": "provider_failure:HTTPError"
+}

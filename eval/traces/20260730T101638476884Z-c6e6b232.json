@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:16:38.476884+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-017",
+  "page_number": 4,
+  "selected_text_sha256": "18ef4e8c6f1689550887bc56404b54a450f8ac5ac8b1cfedcfc173da31baf193",
+  "question": "Hãy giải thích MCP dựa trên đoạn này.",
+  "status": "error",
+  "latency_ms": 223,
+  "parse_validation": "not_started",
+  "citation_validation": "not_started",
+  "error": "provider_http_429:quota_exceeded"
+}

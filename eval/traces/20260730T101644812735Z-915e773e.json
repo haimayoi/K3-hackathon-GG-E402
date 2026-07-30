@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:16:44.812735+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-018",
+  "page_number": 1,
+  "selected_text_sha256": "722042b425f33d1de9f0d642cba1c82bd64df6b9444b149d4caec452cdc014be",
+  "question": "Tóm tắt toàn bộ bài giảng.",
+  "status": "error",
+  "latency_ms": 334,
+  "parse_validation": "not_started",
+  "citation_validation": "not_started",
+  "error": "provider_http_429:quota_exceeded"
+}

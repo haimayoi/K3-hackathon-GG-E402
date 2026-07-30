@@ -1,0 +1,12 @@
+# CP4.1 — Evidence chuẩn B và impact
+- Thời điểm: 2026-07-30 (Asia/Saigon)
+- Mục tiêu: Evidence kiểm lại được và bảng impact ít nhất 3 ứng viên có số.
+- Hiện trạng trước khi làm: Mining cơ bản có counts nhưng chưa có proxy user/conversation cho hai ứng viên bị loại.
+- Thay đổi đã thực hiện: Thêm metric citation rỗng theo user/conversation và heuristic thiếu context có marker rõ; tạo bảng impact, giữ ứng viên loại và bias.
+- File thay đổi: scripts/mine_review_concept.py, evidence/mining-method.md, evidence/mining-summary.md, evidence/review-concept-counts.csv, evidence/impact-analysis.md, report này.
+- Command/test đã chạy: python scripts/mine_review_concept.py; kiểm tra metrics impact; compileall; git diff --check; git status --short.
+- Kết quả: Mining tái lập PASS; citation rỗng 448 turn/215 user/276 conversation; proxy thiếu context 178/116/135; compile và git diff --check PASS.
+- Bằng chứng/đường dẫn artifact: evidence/impact-analysis.md và toàn bộ mining artifacts.
+- Vấn đề còn lại: Không có khảo sát chuẩn A, learning outcome hay time-saving measurement.
+- Trạng thái: PASS
+- Bước tiếp theo: Test evidence rồi hoàn thiện spec §1–§9.

@@ -1,0 +1,39 @@
+# CP3.0 — Audit repo và baseline
+- Thời điểm: 2026-07-30 (Asia/Saigon)
+- Mục tiêu: Đọc source of truth, xác minh trạng thái CP2 bằng code, kiểm tra Git/Python/PDF/import và chuẩn hóa ignore rules.
+- Hiện trạng trước khi làm:
+  - Branch `2A202601465---Ha_Duyen_Hung`; remote `origin` là `haimayoi/K3-hackathon-GG-E402`, `upstream` là repo Batch03 K3.
+  - Worktree đã có thay đổi của người dùng ở `app.py`, nhiều file `components/`, `requirements.txt`, pycache; có file/folder untracked gồm master prompt, `components/pdf_loader.py`, `data/uploads/`, `data/vlearn-pack/slides/`. Không xóa hay hoàn nguyên các thay đổi này.
+  - Root workspace tên `DAY05_2A202601587_LeHaHaiVan`, branch gợi ý mã/tên khác, còn README không ghi thành viên. Đây là naming/identity mismatch; không tự gán danh tính và không thể xác minh tên ZIP từ repo.
+  - UI CP2 đã có viewer PDF 23 trang, text layer cho phép bôi đen, popup nhập câu hỏi, chat thread và quiz/retry.
+  - `components/chatbot_panel.py` lấy answer/quiz/confidence từ `components/mock_data.py`; confidence là số hardcode và chưa phải bằng chứng người học hiểu.
+  - Chưa có provider AI thật, structured contract, trace AI, golden set, eval run, `spec.md`, `eval/`, `validation/`, `reflection/`.
+- Tóm tắt tài liệu đã đọc theo thứ tự:
+  - `README.md`: luật hackathon, cấu trúc nộp bài, CP1–CP6, bảo mật data pack.
+  - `01-de-bai.md`: hướng A VLearn; pain/evidence/impact/lát cắt/willing users là 5 tiêu chí nghiệm thu.
+  - `02-guide.md`: Conditional theo cost-of-error; ≥4 HAX/PAIR; 4 lớp rủi ro; golden set/eval; validation ≥5 người; demo 6 slide.
+  - `03-template-ai-spec.md`: cấu trúc bắt buộc §1–§9.
+  - `04-rubric.md`: CP3 cần AI thật + golden set + run đủ case; CP4 cần spec/evidence/quality bar.
+  - `STREAMLIT_LEARNING_CHATBOT_FLOW.md`: đặc tả CP2 mock cũ dùng confidence threshold, được master CP3 thay thế ở quyết định trung tâm.
+  - `app.py` và `components/`: PDF loader là phần thật; learning answer/quiz vẫn mock; frontend chưa gửi `page_number`.
+  - `requirements.txt`: Streamlit, pypdf, PyMuPDF; chưa có pytest.
+  - Data pack README/dictionary: dữ liệu thật đã ẩn danh, chỉ dùng cục bộ; thống kê phải kiểm lại bằng script.
+- Thay đổi đã thực hiện:
+  - Mở rộng `.gitignore` cho secret, venv, cache/test/runtime artifact, đồng thời giữ `.env.example`.
+  - Tạo `.venv`; cài dependency bị timeout mạng. Giữ môi trường này, không phá môi trường người dùng.
+  - Tạo cấu trúc log và decision log.
+- File thay đổi: `.gitignore`, `project_logs/command-history.log`, `project_logs/decisions.md`, `project_logs/checkpoints/CP3/00-repo-audit.md`.
+- Command/test đã chạy:
+  - `python --version` → Python 3.12.10.
+  - `python -m compileall app.py components` → PASS.
+  - Import toàn bộ Python component → PASS.
+  - PDF smoke bằng `load_pdf_path(DEFAULT_PDF_PATH)` → PASS: 23 trang, 19 trang có text.
+  - `python -m venv .venv` → PASS.
+  - `.\.venv\Scripts\python.exe -m pip install -r requirements.txt` → FAIL do `ReadTimeoutError` từ PyPI.
+  - Import dependency bằng Python hệ thống → PASS: Streamlit 1.60.0, pypdf 6.14.2, PyMuPDF 1.28.0.
+  - `git diff --check` và `git status --short` được chạy lại sau khi ghi report.
+- Kết quả: Baseline code compile/import/PDF PASS; `.venv` tồn tại nhưng dependency chưa cài đủ do mạng.
+- Bằng chứng/đường dẫn artifact: `app.py`, `components/`, `data/uploads/day01-slide-blue-v0.pdf`, `project_logs/command-history.log`.
+- Vấn đề còn lại: `VENV_DEPENDENCY_INSTALL_TIMEOUT`; pycache đã được track từ trước và đang modified; cần con người xác nhận naming/thành viên.
+- Trạng thái: PARTIAL
+- Bước tiếp theo: Thiết kế AI contract có validation nghiêm, không dùng confidence threshold làm quyết định trung tâm.

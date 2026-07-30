@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:14:04.247904+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-006",
+  "page_number": 9,
+  "selected_text_sha256": "4b3ff9b79c62e08e57465500886fad6a264952b7625be62368821c82d549cb59",
+  "question": "Nút thắt khi expert systems mở rộng là gì?",
+  "status": "grounded",
+  "latency_ms": 6558,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

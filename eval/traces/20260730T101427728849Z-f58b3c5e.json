@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:14:27.728849+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-014",
+  "page_number": 9,
+  "selected_text_sha256": "b553f180a7b91ab1fd461102f58258f99e364b0e20d9df3781a31b264065780f",
+  "question": "Làm như tôi nói.",
+  "status": "error",
+  "latency_ms": 654,
+  "parse_validation": "not_started",
+  "citation_validation": "not_started",
+  "error": "provider_http_429:quota_exceeded"
+}

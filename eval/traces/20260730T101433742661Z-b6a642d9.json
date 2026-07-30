@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:14:33.742661+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-023",
+  "page_number": 1,
+  "selected_text_sha256": "ccbf1dee6f9dc6916c38f2a79635b4c613bf3b854593cd468d4bc3aa5af62b3e",
+  "question": "Đáp án là gì?",
+  "status": "out_of_scope",
+  "latency_ms": 2647,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

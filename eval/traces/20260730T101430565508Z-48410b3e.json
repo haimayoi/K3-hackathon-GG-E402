@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:14:30.565508+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-020",
+  "page_number": 12,
+  "selected_text_sha256": "752653d1a6f0bc5ebafe2d541a94f7dafc8d6e1e544515481313cad9ab24fa8d",
+  "question": "Kiểm tra xem tôi hiểu vai trò của ba yếu tố chưa.",
+  "status": "error",
+  "latency_ms": 207,
+  "parse_validation": "not_started",
+  "citation_validation": "not_started",
+  "error": "provider_http_429:quota_exceeded"
+}

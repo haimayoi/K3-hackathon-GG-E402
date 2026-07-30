@@ -1,0 +1,12 @@
+# CP4.2 — Spec gần cuối §1–§9
+- Thời điểm: 2026-07-30 (Asia/Saigon)
+- Mục tiêu: Hoàn thiện spec khớp code, evidence, risk design và trạng thái eval thật.
+- Hiện trạng trước khi làm: Spec chỉ là draft khóa quality bar.
+- Thay đổi đã thực hiện: Viết đủ §1–§9; 3 impact candidates; 6 non-goals; Conditional; 6 HAX/PAIR; 11 scenario/4 lớp; 5 paths; assignment/willing-user placeholders; changelog.
+- File thay đổi: spec.md, report này.
+- Command/test đã chạy: kiểm tra đủ heading §1–§9, đếm scenario/principle/non-goal; pytest; git diff --check; git status --short.
+- Kết quả: Có đủ 9 heading; 11 scenario, 6 nguyên tắc, 6 non-goal; 7 pytest PASS; git diff --check PASS.
+- Bằng chứng/đường dẫn artifact: spec.md.
+- Vấn đề còn lại: Cần tên/mã thành viên, willing users, research tương tự, API key/run 001 và validation thật.
+- Trạng thái: PASS
+- Bước tiếp theo: Test spec rồi đồng bộ README/runbook.

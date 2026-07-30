@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:14:21.263724+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-009",
+  "page_number": 15,
+  "selected_text_sha256": "6c01b73b2a62bedbfdf8adae83b9738c6451e8cbbecd844703c768d28f67089f",
+  "question": "Điều gì làm trải nghiệm này trở nên đại chúng?",
+  "status": "grounded",
+  "latency_ms": 6828,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

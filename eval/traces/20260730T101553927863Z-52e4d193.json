@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:15:53.927863+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-010",
+  "page_number": 37,
+  "selected_text_sha256": "6f83a1652612e2f0432781ebba61856302e3f8d4dca44af1ef285efeee5afdf7",
+  "question": "Tóm tắt slide 37.",
+  "status": "insufficient_context",
+  "latency_ms": 3766,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

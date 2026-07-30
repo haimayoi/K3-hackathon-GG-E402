@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T08:34:23.242376+00:00",
+  "provider": "unknown",
+  "model": "unknown",
+  "case_event_id": "CP32-MISSING-KEY",
+  "page_number": 8,
+  "selected_text_sha256": "ee7f0b8a667c42e942a0c45b5c41a9cc2559083a17ce0043fbfcc4d8abaf8e0d",
+  "question": "Giải thích?",
+  "status": "error",
+  "latency_ms": 0,
+  "parse_validation": "not_started",
+  "citation_validation": "not_started",
+  "error": "BLOCKED_BY_API_KEY"
+}

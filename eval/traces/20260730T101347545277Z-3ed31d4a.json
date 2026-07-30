@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:13:47.545277+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-003",
+  "page_number": 3,
+  "selected_text_sha256": "3ced53084cb996aab181559697cc6d2433a5de6a61988a4b3e410e256d6ac31c",
+  "question": "Siri được mô tả là gì?",
+  "status": "grounded",
+  "latency_ms": 9610,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

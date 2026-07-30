@@ -1,0 +1,16 @@
+# CP3.3 — Mining review_concept và golden set
+- Thời điểm: 2026-07-30 (Asia/Saigon)
+- Mục tiêu: Tạo evidence chuẩn B và golden set tối thiểu 24 case có source ID.
+- Hiện trạng trước khi làm: Chỉ có DATA_DICTIONARY; chưa có script tái lập, evidence output hay golden set.
+- Thay đổi đã thực hiện: Script đọc trực tiếp CSV, tính counts/rates/latency và xuất aggregate + 5 excerpt ngắn; golden set lưu context tối thiểu và source ID.
+- File thay đổi: scripts/mine_review_concept.py, evidence/, eval/golden-set.jsonl, report này.
+- Command/test đã chạy: python scripts/mine_review_concept.py; kiểm tra JSONL/cơ cấu/PII tối thiểu; compileall; git diff --check; git status --short.
+- Kết quả:
+  - Mining PASS: 2.522 dòng, 1.261 tutor turn, 1.074 review_concept, 326 user, 524 conversation; check question 1/1.074; citation rỗng 448/1.074; misconception/follow-up 0/0; rating up/down 30/30 trên 60; latency median 1.747ms, p90 2.435ms, max 13.240ms.
+  - DATA_DICTIONARY ghi 1.072 review_concept nhưng script tính 1.074; mismatch được giữ nguyên, không sửa số cho khớp.
+  - Golden set PASS: 24 case; 13 chatlog, 10 slide, 1 synthetic; 9 normal, 12 hard, 3 rare; mỗi risk class khó có ít nhất 3 case.
+  - Compile scripts và git diff --check PASS.
+- Bằng chứng/đường dẫn artifact: evidence/mining-method.md, evidence/mining-summary.md, evidence/review-concept-counts.csv, evidence/review-concept-examples.md, eval/golden-set.jsonl.
+- Vấn đề còn lại: Chatlog không chứa selected slide text đầy đủ cho mọi turn; case chatlog được phát triển thành context tối thiểu và giữ source ID để kiểm tra nguồn.
+- Trạng thái: PASS
+- Bước tiếp theo: Chạy mining, tạo/validate cơ cấu golden set.

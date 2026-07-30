@@ -1,0 +1,16 @@
+# CP3.1 — Thiết kế contract AI có cấu trúc
+- Thời điểm: 2026-07-30 (Asia/Saigon)
+- Mục tiêu: Tạo schema strict và prompt quyết định grounding có thể giải thích.
+- Hiện trạng trước khi làm: Confidence hardcode bật quiz; chưa có parser/schema/citation validation.
+- Thay đổi đã thực hiện:
+  - Dataclass strict reject key thừa/thiếu, sai type, option trùng, index ngoài miền, feedback thiếu và quiz ở trạng thái không grounded.
+  - Citation phải đúng trang và quote phải có trong selected context sau normalize whitespace.
+  - Bốn trạng thái provider; trạng thái error chỉ do engine tạo khi provider/parser lỗi.
+  - Prompt chỉ cho JSON, không confidence, quy định conditional automation.
+- File thay đổi: models/__init__.py, models/learning_response.py, prompts/learning_assistant.md, report này.
+- Command/test đã chạy: python -m compileall models; contract self-check; git diff --check; git status --short.
+- Kết quả: Compile PASS; contract hợp lệ parse PASS; citation sai trang/quote bị REJECT đúng; git diff --check PASS.
+- Bằng chứng/đường dẫn artifact: models/learning_response.py, prompts/learning_assistant.md.
+- Vấn đề còn lại: Chưa nối provider/UI; kiểm chứng ngữ nghĩa fact/quiz cần eval.
+- Trạng thái: PASS
+- Bước tiếp theo: Test contract, rồi tích hợp provider và learning engine.

@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:14:14.438216+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-008",
+  "page_number": 14,
+  "selected_text_sha256": "a7aad80b2702c73dc5b37cc9d274cf551c10105c31b6fb90d189a42978236b70",
+  "question": "Attention khác xử lý tuần tự ở điểm nào?",
+  "status": "grounded",
+  "latency_ms": 5644,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

@@ -1,0 +1,12 @@
+# CP3.4 — Định nghĩa eval và khóa quality bar
+- Thời điểm: 2026-07-30 (Asia/Saigon), trước run 001.
+- Mục tiêu: Định nghĩa sáu chiều kiểm chứng, hard failure và bar bằng số trước khi đo.
+- Hiện trạng trước khi làm: Golden set đã có nhưng chưa có protocol hay quality bar trong spec.
+- Thay đổi đã thực hiện: Tạo eval/README.md; ghi quality bar 80% và hai điều kiện 100% vào spec.md trước run 001.
+- File thay đổi: eval/README.md, spec.md, report này.
+- Command/test đã chạy: kiểm tra quality bar xuất hiện ở cả hai file; xác nhận run-001 chưa có results; git diff --check; git status --short.
+- Kết quả: Quality bar xuất hiện ở eval/README.md và spec.md; pre-run results không tồn tại; git diff --check PASS.
+- Bằng chứng/đường dẫn artifact: eval/README.md, spec.md §7.
+- Vấn đề còn lại: Rule-based factual check là proxy; case khó vẫn cần human review.
+- Trạng thái: PASS
+- Bước tiếp theo: Test khóa bar rồi tạo runner và chạy run 001.

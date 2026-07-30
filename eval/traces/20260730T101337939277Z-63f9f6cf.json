@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:13:37.939277+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-002",
+  "page_number": 11,
+  "selected_text_sha256": "390a0ab51db5b035ef7c3732b96fe8fa780130a699b56ac4028e3e835a8811df",
+  "question": "Ràng buộc nguồn lực chính là gì?",
+  "status": "grounded",
+  "latency_ms": 5484,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

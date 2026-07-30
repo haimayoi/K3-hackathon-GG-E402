@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T10:14:22.575568+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "GS-011",
+  "page_number": 12,
+  "selected_text_sha256": "342b0d99811f18a5e4e3863a9e1bb0bede1272d5a516204e08e2dbae6b543819",
+  "question": "Rule-based có phải nguyên nhân không?",
+  "status": "error",
+  "latency_ms": 533,
+  "parse_validation": "not_started",
+  "citation_validation": "not_started",
+  "error": "provider_http_429:quota_exceeded"
+}
