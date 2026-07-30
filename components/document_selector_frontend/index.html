@@ -3,6 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="./pdfjs/pdf_viewer.css" />
     <style>
       :root {
         color-scheme: light;
@@ -13,7 +14,7 @@
         --soft: #f6f8fb;
         --accent: #635bff;
         --accent-dark: #5148e5;
-        --selection: #dcd9ff;
+        --selection: rgba(99, 91, 255, .24);
       }
 
       * { box-sizing: border-box; }
@@ -134,9 +135,11 @@
 
       .document-scroll {
         position: relative;
+        display: grid;
         height: 570px;
-        overflow-y: auto;
-        background: #fff;
+        place-items: center;
+        overflow: hidden;
+        background: #dfe3e9;
         touch-action: pan-y;
         overscroll-behavior: contain;
         outline: none;
@@ -146,6 +149,32 @@
         box-shadow: inset 0 0 0 3px rgba(99, 91, 255, .35);
       }
 
+      .pdf-stage {
+        position: relative;
+        box-shadow: 0 8px 28px rgba(23, 32, 51, .16);
+      }
+
+      .pdf-stage canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .pdf-stage .textLayer {
+        z-index: 2;
+        user-select: text;
+        -webkit-user-select: text;
+      }
+
+      .pdf-stage .textLayer span {
+        user-select: text;
+        -webkit-user-select: text;
+      }
+
+      .pdf-stage .textLayer ::selection {
+        background: var(--selection);
+        color: rgba(23, 32, 51, .92);
+      }
 
       .page-status {
         position: absolute;
@@ -161,28 +190,16 @@
         pointer-events: none;
       }
 
-      article {
-        max-width: 720px;
-        margin: 0 auto;
-        padding: 42px 46px 96px;
-        cursor: text;
-        font-family: inherit;
-        font-size: 18px;
-        line-height: 1.82;
-      }
-
-      article p { margin: 0 0 24px; }
-      article::selection, article *::selection { background: var(--selection); }
       ::highlight(active-passage) {
-        background: #ccc8ff;
-        color: inherit;
+        background: var(--selection);
+        color: rgba(23, 32, 51, .92);
       }
 
       .selection-overlay {
         position: absolute;
         z-index: 2;
         border-radius: 3px;
-        background: #ccc8ff;
+        background: var(--selection);
         pointer-events: none;
         mix-blend-mode: multiply;
       }
@@ -304,8 +321,11 @@
       </header>
 
       <div class="document-scroll" id="document-scroll" tabindex="0" role="region" aria-label="Cu&#7897;n &#273;&#7875; chuy&#7875;n trang slide">
+        <div class="pdf-stage" id="pdf-stage">
+          <canvas id="pdf-canvas"></canvas>
+          <div class="textLayer" id="text-layer"></div>
+        </div>
         <span class="page-status" id="page-status"></span>
-        <article id="document" tabindex="0"></article>
       </div>
 
       <form class="popover" id="popover">
@@ -323,11 +343,15 @@
       </form>
     </section>
 
-    <script>
+    <script type="module">
+      import * as pdfjsLib from "./pdfjs/pdf.mjs";
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "./pdfjs/pdf.worker.mjs";
       const API_VERSION = 1;
       const viewer = document.getElementById("viewer");
       const scroller = document.getElementById("document-scroll");
-      const article = document.getElementById("document");
+      const article = document.getElementById("text-layer");
+      const pdfStage = document.getElementById("pdf-stage");
+      const pdfCanvas = document.getElementById("pdf-canvas");
       const title = document.getElementById("document-title");
       const popover = document.getElementById("popover");
       const question = document.getElementById("question");
@@ -347,6 +371,9 @@
       let navigationLocked = false;
       let touchStartY = null;
       let pageTexts = [];
+      let pdfDocument = null;
+      let currentPdfPayload = "";
+      let renderGeneration = 0;
 
       function post(type, payload = {}) {
         window.parent.postMessage({ isStreamlitMessage: true, type, ...payload }, "*");
@@ -435,61 +462,97 @@
         setTimeout(() => question.focus(), 0);
       }
 
-      function renderDocument(args) {
+      function base64ToBytes(encoded) {
+        const binary = atob(encoded);
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) {
+          bytes[index] = binary.charCodeAt(index);
+        }
+        return bytes;
+      }
+
+      async function loadPdf(encoded) {
+        if (!encoded || encoded === currentPdfPayload) return;
+        currentPdfPayload = encoded;
+        pdfDocument = await pdfjsLib.getDocument({ data: base64ToBytes(encoded) }).promise;
+      }
+
+      async function renderPdfPage(pageNumber) {
+        if (!pdfDocument) return;
+        const generation = ++renderGeneration;
+        const pdfPage = await pdfDocument.getPage(pageNumber);
+        const unscaled = pdfPage.getViewport({ scale: 1 });
+        const availableWidth = Math.max(100, scroller.clientWidth - 24);
+        const availableHeight = Math.max(100, scroller.clientHeight - 24);
+        const scale = Math.min(availableWidth / unscaled.width, availableHeight / unscaled.height);
+        const viewport = pdfPage.getViewport({ scale });
+        if (generation !== renderGeneration) return;
+
+        const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+        pdfStage.style.width = `${viewport.width}px`;
+        pdfStage.style.height = `${viewport.height}px`;
+        pdfStage.style.setProperty("--total-scale-factor", viewport.scale);
+        pdfCanvas.width = Math.floor(viewport.width * outputScale);
+        pdfCanvas.height = Math.floor(viewport.height * outputScale);
+        pdfCanvas.style.width = `${viewport.width}px`;
+        pdfCanvas.style.height = `${viewport.height}px`;
+        const context = pdfCanvas.getContext("2d", { alpha: false });
+        await pdfPage.render({
+          canvasContext: context,
+          viewport,
+          transform: outputScale === 1 ? null : [outputScale, 0, 0, outputScale, 0, 0],
+        }).promise;
+        if (generation !== renderGeneration) return;
+
+        article.replaceChildren();
+        const textContent = await pdfPage.getTextContent();
+        const textLayer = new pdfjsLib.TextLayer({
+          textContentSource: textContent,
+          container: article,
+          viewport,
+        });
+        await textLayer.render();
+      }
+
+      async function renderDocument(args) {
         const pageNumber = Math.max(1, Number(args.page) || 1);
         currentPage = pageNumber;
         pageCount = Math.max(currentPage, Number(args.page_count) || 1);
         pageStatus.textContent = `${currentPage} / ${pageCount}`;
         pageTexts = Array.isArray(args.page_texts) ? args.page_texts : [];
-        const payload = JSON.stringify([args.title, pageNumber, pageCount, pageTexts.length]);
+        const payload = JSON.stringify([args.title, pageNumber, pageCount, args.pdf_base64?.length]);
         if (payload === lastPayload) return;
         lastPayload = payload;
         title.textContent = args.title || "Tài liệu học tập";
         clearActiveSelection();
-        const pageText = String(pageTexts[currentPage - 1] || "").trim();
-        selectedText = pageText.replace(/\s+/g, " ");
+        selectedText = String(pageTexts[currentPage - 1] || "").replace(/\s+/g, " ").trim();
         askPageButton.disabled = !selectedText;
-        article.replaceChildren();
-        scroller.scrollTop = 0;
-        pageText
-          .split(/\n\s*\n/)
-          .filter(Boolean)
-          .forEach((paragraph) => {
-            const node = document.createElement("p");
-            node.textContent = paragraph.trim();
-            article.appendChild(node);
-          });
+        await loadPdf(args.pdf_base64);
+        await renderPdfPage(currentPage);
       }
-
-
-      function navigatePage(delta) {
+      async function navigatePage(delta) {
         if (navigationLocked) return;
         const target = Math.max(1, Math.min(pageCount, currentPage + delta));
         if (target === currentPage) return;
         navigationLocked = true;
         currentPage = target;
         pageStatus.textContent = `${currentPage} / ${pageCount}`;
+        clearActiveSelection();
         selectedText = String(pageTexts[currentPage - 1] || "").replace(/\s+/g, " ").trim();
         askPageButton.disabled = !selectedText;
-        post("streamlit:setComponentValue", {
-          value: {
-            event_id: `navigation-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-            page: currentPage,
-          },
-        });
-        setTimeout(() => {
+        try {
+          await renderPdfPage(currentPage);
+          post("streamlit:setComponentValue", {
+            value: {
+              event_id: `navigation-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+              page: currentPage,
+            },
+          });
+        } finally {
           navigationLocked = false;
-        }, 300);
-      }
-
-      scroller.addEventListener("wheel", (event) => {
-        const atTop = scroller.scrollTop <= 1;
-        const atBottom = scroller.scrollTop + scroller.clientHeight >= scroller.scrollHeight - 1;
-        const leavingPage = (event.deltaY < 0 && atTop) || (event.deltaY > 0 && atBottom);
-        if (!leavingPage) {
-          wheelAccumulator = 0;
-          return;
         }
+      }
+      scroller.addEventListener("wheel", (event) => {
         event.preventDefault();
         wheelAccumulator += event.deltaY;
         if (Math.abs(wheelAccumulator) < 70) return;
@@ -569,7 +632,7 @@
             page: currentPage,
           },
         });
-        clearActiveSelection();
+        hidePopover(true);
       });
 
       window.addEventListener("message", (event) => {

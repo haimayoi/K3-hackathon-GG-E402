@@ -238,6 +238,7 @@ def main() -> None:
     with left_col:
         submission = render_document_panel(
             page.source_label if page else "Tài liệu không khả dụng",
+            DOCUMENTS[document_id][1],
             page_number,
             len(pages),
             [item.text for item in pages],

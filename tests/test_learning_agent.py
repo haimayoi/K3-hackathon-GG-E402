@@ -115,6 +115,18 @@ class LearningAgentTests(unittest.TestCase):
         result, provider = self.run_case("Explain this", "Top_p")
         self.assertEqual(result.state, AgentState.PRESENTED)
         self.assertEqual(provider.calls, 1)
+    def test_polite_vietnamese_passage_relative_question_remains_eligible(self):
+        result, provider = self.run_case(
+            "gi\u00fap t\u00f4i gi\u1ea3i th\u00edch",
+            "Top_p gi\u1eef nh\u00f3m token c\u00f3 x\u00e1c su\u1ea5t c\u1ed9ng d\u1ed3n \u0111\u1ea1t ng\u01b0\u1ee1ng",
+        )
+        self.assertEqual(result.state, AgentState.PRESENTED)
+        self.assertEqual(provider.calls, 1)
+
+    def test_polite_explain_request_with_unrelated_subject_is_rejected(self):
+        result, provider = self.run_case("Gi\u00fap t\u00f4i gi\u1ea3i th\u00edch th\u1ee7 \u0111\u00f4 Ph\u00e1p", "Top_p")
+        self.assertEqual(result.reason_code, ReasonCode.OUTSIDE_COURSE_SCOPE)
+        self.assertEqual(provider.calls, 0)
 
     def test_general_knowledge_outside_course_scope(self):
         result, _ = self.run_case("Thời tiết Bangkok hôm nay?", "Top_p")

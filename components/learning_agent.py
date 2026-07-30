@@ -244,7 +244,14 @@ def _question_is_grounded(question: str, selected_text: str, source_context: str
         "l\u00e0m r\u00f5", "\u0111\u1ecbnh ngh\u0129a", "cho t\u00f4i v\u00ed d\u1ee5",
         "c\u00e1i n\u00e0y l\u00e0 g\u00ec", "\u0111o\u1ea1n n\u00e0y l\u00e0 g\u00ec",
     }
-    if value in passage_relative:
+    passage_relative_patterns = (
+        r"^(?:(?:please|can you|could you|help me)\s+)?(?:explain|clarify|define)(?:\s+(?:this|it|the passage))?$",
+        r"^(?:(?:xin|hãy|giúp)(?:\s+(?:tôi|mình))?\s+)?(?:giải thích|làm rõ|định nghĩa)(?:\s+(?:đoạn này|phần này|cái này))?$",
+        r"^(?:bạn\s+)?(?:giải thích|làm rõ)(?:\s+(?:đoạn này|phần này|cái này))?\s+giúp\s+(?:tôi|mình)$",
+    )
+    if value in passage_relative or any(
+        re.fullmatch(pattern, value) for pattern in passage_relative_patterns
+    ):
         return True
 
     ignored = {

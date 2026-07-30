@@ -22,10 +22,18 @@ class CanonicalAppSmokeTest(unittest.TestCase):
         self.assertIn("pageTexts[currentPage - 1]", frontend)
         self.assertIn('id="page-status"', frontend)
         self.assertIn('tabindex="0"', frontend)
-        self.assertIn('id="document"', frontend)
-        self.assertIn("article.replaceChildren()", frontend)
+        self.assertIn('id="pdf-canvas"', frontend)
+        self.assertIn('id="text-layer"', frontend)
+        self.assertIn("new pdfjsLib.TextLayer", frontend)
+        self.assertIn("pdfjsLib.getDocument", frontend)
         self.assertNotIn("base64ToBlobUrl", frontend)
         self.assertNotIn("slide-image", frontend)
+        self.assertIn("color: rgba(23, 32, 51, .92);", frontend)
+        submit_handler = frontend.split('popover.addEventListener("submit"', 1)[1].split(
+            'window.addEventListener("message"', 1
+        )[0]
+        self.assertIn("hidePopover(true);", submit_handler)
+        self.assertNotIn("clearActiveSelection();", submit_handler)
 
 
 if __name__ == "__main__":
