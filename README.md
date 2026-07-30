@@ -61,15 +61,14 @@ Python 3.10 trở lên. PowerShell:
     python -m pip install -r requirements.txt
     Copy-Item .env.example .env
 
-Điền GEMINI_API_KEY trong .env hoặc environment cục bộ; không commit .env. Ứng dụng hiện
-đọc environment variables trực tiếp, vì vậy nếu dùng file .env thì cần nạp biến vào shell
-hoặc công cụ chạy trước khi start.
+Điền `OPENAI_API_KEY` trong `.env` hoặc environment cục bộ; không commit `.env`. Ứng dụng
+tự đọc file `.env` khi khởi động. Model mặc định là `gpt-5.6-luna`; có thể đổi bằng
+`OPENAI_MODEL` và có thể cấu hình endpoint bằng `OPENAI_BASE_URL`.
 
 Chạy app:
 
-Trong web, mở **Cấu hình AI** để nhập Gemini API key cho riêng session hiện tại và chọn model.
-Key không được ghi vào file hay trace. App cũng hỗ trợ `GEMINI_API_KEY` hoặc `GOOGLE_API_KEY`
-từ `.env`; model mặc định hiện tại là `gemini-3.5-flash`.
+API key và model không xuất hiện trên giao diện. App chỉ lấy cấu hình OpenAI từ `.env`
+hoặc environment và không ghi key vào log hay trace.
 
     python -m streamlit run app.py
 
@@ -90,9 +89,9 @@ Chạy mining và tạo lại golden set:
 
 Chạy eval thật:
 
-    $env:LLM_PROVIDER='gemini'
-    $env:LLM_MODEL='gemini-3.5-flash'
-    $env:GEMINI_API_KEY='YOUR_KEY'
+    $env:LLM_PROVIDER='openai'
+    $env:OPENAI_MODEL='gpt-5.6-luna'
+    $env:OPENAI_API_KEY='YOUR_KEY'
     $env:USE_MOCK_LLM='false'
     python scripts/run_eval.py --run-id run-001
 

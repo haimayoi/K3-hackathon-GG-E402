@@ -15,7 +15,7 @@ from components.mock_data import DEFAULT_TEST_CASE_ID, TEST_CASES
 from models.learning_response import LearningResponse, ResponseValidationError
 from services.ai_client import (
     AIConfig,
-    GeminiClient,
+    OpenAIClient,
     ProviderConfigurationError,
     ProviderError,
     ProviderResult,
@@ -44,6 +44,14 @@ def parse_provider_json(raw_text: str) -> LearningResponse:
         payload = json.loads(text)
     except json.JSONDecodeError as error:
         raise ResponseValidationError('provider output không phải JSON') from error
+    quiz = payload.get('quiz') if isinstance(payload, dict) else None
+    if isinstance(quiz, dict) and isinstance(quiz.get('misconception_feedback'), list):
+        correct = quiz.get('correct_option_index')
+        quiz['misconception_feedback'] = {
+            str(index): feedback
+            for index, feedback in enumerate(quiz['misconception_feedback'])
+            if index != correct
+        }
     return LearningResponse.from_dict(payload)
 
 
@@ -129,7 +137,7 @@ def run_learning_turn(
             parse_result = 'valid'
             citation_result = 'valid'
         else:
-            active_client = client or GeminiClient(active_config)
+            active_client = client or OpenAIClient(active_config)
             result = active_client.generate_json({
                 'case_id': event_id,
                 'selected_text': selected_text,
@@ -151,9 +159,12 @@ def run_learning_turn(
     except ProviderError as error:
         error_code = str(error)
         if 'authentication_failed' in error_code or 'permission_denied' in error_code:
-            message = 'API key không hợp lệ hoặc chưa có quyền dùng Gemini.'
+            message = 'API key không hợp lệ hoặc chưa có quyền dùng mô hình này.'
         elif 'model_unavailable' in error_code:
-            message = 'Model AI không khả dụng. Hãy chọn model Gemini mới hơn.'
+            message = (
+                'Mô hình OpenAI đang không khả dụng với API key này. '
+                'Hãy kiểm tra OPENAI_MODEL và quyền truy cập của key.'
+            )
         elif 'quota_exceeded' in error_code:
             message = 'API key đã hết hạn mức tạm thời. Vui lòng thử lại sau.'
         else:

@@ -59,9 +59,9 @@ Run 001 chưa chạy và không có result giả.
 - Quality bar giữ nguyên: 80%, không citation bịa, không quiz khi non-grounded.
 - Cấu hình rồi chạy:
 
-    $env:LLM_PROVIDER='gemini'
-    $env:LLM_MODEL='gemini-3.5-flash'
-    $env:GEMINI_API_KEY='YOUR_KEY'
+    $env:LLM_PROVIDER='openai'
+    $env:OPENAI_MODEL='gpt-5.6-luna'
+    $env:OPENAI_API_KEY='YOUR_KEY'
     $env:USE_MOCK_LLM='false'
     python scripts/run_eval.py --run-id run-001
 '''.format(reason)
@@ -218,8 +218,8 @@ def main() -> int:
         print('BLOCKED_BY_API_KEY: mock mode is not allowed for official eval')
         return 2
     if not config.api_key:
-        write_blocker(run_dir, 'GEMINI_API_KEY chưa được cấu hình')
-        print('BLOCKED_BY_API_KEY: missing GEMINI_API_KEY')
+        write_blocker(run_dir, 'OPENAI_API_KEY chưa được cấu hình')
+        print('BLOCKED_BY_API_KEY: missing OPENAI_API_KEY')
         return 2
     cases = load_cases()
     existing = load_existing_results(run_dir) if args.resume else {}

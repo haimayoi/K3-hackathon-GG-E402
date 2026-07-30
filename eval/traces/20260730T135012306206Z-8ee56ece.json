@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T13:50:12.306206+00:00",
+  "provider": "openai",
+  "model": "gpt-4o-mini",
+  "case_event_id": "1785419409474-611bb67839529",
+  "page_number": 23,
+  "selected_text_sha256": "a597a4a62c0a2c73a11c1f3ec25d8504154ea454582180ff0f4845a0a2961a02",
+  "question": "hãy giải thích",
+  "status": "insufficient_context",
+  "latency_ms": 2772,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T12:45:12.487257+00:00",
+  "provider": "gemini",
+  "model": "gemini-3.5-flash",
+  "case_event_id": "1785415497978-6e086334d4a1f8",
+  "page_number": 14,
+  "selected_text_sha256": "d001729c7184f5d275975ad65c7194badd9646630cb627af3818a8f303c8a6ff",
+  "question": "Vì sao Transformer trở thành nền móng kỹ thuật cho GPT, BERT và làn sóng LLM?",
+  "status": "error",
+  "latency_ms": 195,
+  "parse_validation": "not_started",
+  "citation_validation": "not_started",
+  "error": "provider_http_429:quota_exceeded"
+}

@@ -1,4 +1,4 @@
-'''Small Gemini REST adapter configured only through environment variables.'''
+'''OpenAI Responses API adapter configured only through environment values.'''
 
 from __future__ import annotations
 
@@ -12,14 +12,11 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 
-DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash'
-MODEL_MIGRATIONS = {
-    # Gemini returns HTTP 404 for this model on newly provisioned accounts.
-    'gemini-2.5-flash': DEFAULT_GEMINI_MODEL,
-}
+DEFAULT_OPENAI_MODEL = 'gpt-5.6-luna'
 
 LEARNING_RESPONSE_SCHEMA = {
     'type': 'object',
+    'additionalProperties': False,
     'properties': {
         'status': {
             'type': 'string',
@@ -32,6 +29,7 @@ LEARNING_RESPONSE_SCHEMA = {
             'type': 'array',
             'items': {
                 'type': 'object',
+                'additionalProperties': False,
                 'properties': {
                     'page': {'type': 'integer'},
                     'quote': {'type': 'string'},
@@ -42,6 +40,7 @@ LEARNING_RESPONSE_SCHEMA = {
         'reason': {'type': 'string'},
         'quiz': {
             'type': ['object', 'null'],
+            'additionalProperties': False,
             'properties': {
                 'question': {'type': 'string'},
                 'options': {
@@ -50,16 +49,15 @@ LEARNING_RESPONSE_SCHEMA = {
                     'minItems': 4,
                     'maxItems': 4,
                 },
-                'correct_option_index': {'type': 'integer'},
+                'correct_option_index': {
+                    'type': 'integer', 'minimum': 0, 'maximum': 3,
+                },
                 'correct_explanation': {'type': 'string'},
                 'misconception_feedback': {
-                    'type': 'object',
-                    'properties': {
-                        '0': {'type': 'string'},
-                        '1': {'type': 'string'},
-                        '2': {'type': 'string'},
-                        '3': {'type': 'string'},
-                    },
+                    'type': 'array',
+                    'items': {'type': 'string'},
+                    'minItems': 4,
+                    'maxItems': 4,
                 },
                 'retry_question': {'type': 'string'},
                 'retry_options': {
@@ -68,7 +66,9 @@ LEARNING_RESPONSE_SCHEMA = {
                     'minItems': 2,
                     'maxItems': 2,
                 },
-                'correct_retry_option_index': {'type': 'integer'},
+                'correct_retry_option_index': {
+                    'type': 'integer', 'minimum': 0, 'maximum': 1,
+                },
                 'retry_correct_explanation': {'type': 'string'},
                 'retry_wrong_explanation': {'type': 'string'},
             },
@@ -85,8 +85,9 @@ LEARNING_RESPONSE_SCHEMA = {
 }
 
 
-def _load_dotenv_file() -> None:
-    """Populate os.environ from a local .env file if present."""
+def _load_dotenv_file() -> dict[str, str]:
+    """Read a local .env file into memory without mutating the process env."""
+    values: dict[str, str] = {}
     candidates = [Path.cwd(), Path(__file__).resolve().parents[1]]
     for base_dir in candidates:
         env_path = base_dir / '.env'
@@ -99,9 +100,10 @@ def _load_dotenv_file() -> None:
             key, value = line.split('=', 1)
             key = key.strip()
             value = value.strip().strip('"').strip("'")
-            if key and key not in os.environ:
-                os.environ[key] = value
+            if key:
+                values[key] = value
         break
+    return values
 
 
 class ProviderError(RuntimeError):
@@ -121,22 +123,50 @@ class AIConfig:
     base_url: str
     timeout_seconds: float
 
+    def __post_init__(self) -> None:
+        '''Normalize the single supported provider and its configured model.'''
+        object.__setattr__(self, 'provider', 'openai')
+        object.__setattr__(
+            self, 'model', str(self.model or '').strip() or DEFAULT_OPENAI_MODEL,
+        )
+
     @classmethod
     def from_env(cls) -> 'AIConfig':
-        _load_dotenv_file()
-        provider = os.getenv('LLM_PROVIDER', 'gemini').strip().lower()
-        use_mock = os.getenv('USE_MOCK_LLM', 'false').strip().lower() == 'true'
-        configured_model = os.getenv('LLM_MODEL', DEFAULT_GEMINI_MODEL).strip()
+        dotenv_values = _load_dotenv_file()
+        use_mock = (
+            os.getenv('USE_MOCK_LLM')
+            or dotenv_values.get('USE_MOCK_LLM', 'false')
+        ).strip().lower() == 'true'
+        model = (
+            os.getenv('OPENAI_MODEL')
+            or dotenv_values.get('OPENAI_MODEL')
+            or os.getenv('LLM_MODEL')
+            or dotenv_values.get('LLM_MODEL')
+            or DEFAULT_OPENAI_MODEL
+        ).strip()
+        api_key = (
+            os.getenv('OPENAI_API_KEY')
+            or dotenv_values.get('OPENAI_API_KEY')
+            or None
+        )
+        base_url = (
+            os.getenv('OPENAI_BASE_URL')
+            or dotenv_values.get('OPENAI_BASE_URL')
+            or 'https://api.openai.com/v1'
+        ).rstrip('/')
+        timeout = (
+            os.getenv('LLM_TIMEOUT_SECONDS')
+            or dotenv_values.get('LLM_TIMEOUT_SECONDS')
+            or '45'
+        )
+
         return cls(
-            provider=provider,
-            model=MODEL_MIGRATIONS.get(configured_model, configured_model),
+            provider='openai',
+            model=model,
             use_mock=use_mock,
-            api_key=os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY'),
-            base_url=os.getenv(
-                'GEMINI_BASE_URL',
-                'https://generativelanguage.googleapis.com/v1beta',
-            ).rstrip('/'),
-            timeout_seconds=float(os.getenv('LLM_TIMEOUT_SECONDS', '45')),
+            api_key=api_key,
+            base_url=base_url,
+            timeout_seconds=float(timeout),
         )
 
 
@@ -148,39 +178,38 @@ class ProviderResult:
     model: str
 
 
-class GeminiClient:
+class OpenAIClient:
     def __init__(self, config: AIConfig | None = None) -> None:
         self.config = config or AIConfig.from_env()
 
     def generate_json(self, user_payload: dict[str, Any]) -> ProviderResult:
-        if self.config.provider != 'gemini':
+        if self.config.provider != 'openai':
             raise ProviderConfigurationError('LLM_PROVIDER chưa được hỗ trợ')
         if not self.config.api_key:
             raise ProviderConfigurationError('BLOCKED_BY_API_KEY')
         prompt_path = Path(__file__).parents[1] / 'prompts' / 'learning_assistant.md'
+        instructions = prompt_path.read_text(encoding='utf-8')
         body = {
-            'system_instruction': {
-                'parts': [{'text': prompt_path.read_text(encoding='utf-8')}]
-            },
-            'contents': [{
-                'role': 'user',
-                'parts': [{'text': json.dumps(user_payload, ensure_ascii=False)}],
-            }],
-            'generationConfig': {
-                'temperature': 0.1,
-                'responseMimeType': 'application/json',
-                'responseJsonSchema': LEARNING_RESPONSE_SCHEMA,
+            'model': self.config.model,
+            'instructions': instructions,
+            'input': json.dumps(user_payload, ensure_ascii=False),
+            'store': False,
+            'text': {
+                'format': {
+                    'type': 'json_schema',
+                    'name': 'learning_response',
+                    'schema': LEARNING_RESPONSE_SCHEMA,
+                    'strict': True,
+                },
             },
         }
-        endpoint = (
-            f'{self.config.base_url}/models/{self.config.model}:generateContent'
-        )
+        endpoint = f'{self.config.base_url}/responses'
         request = Request(
             endpoint,
             data=json.dumps(body, ensure_ascii=False).encode('utf-8'),
             headers={
                 'Content-Type': 'application/json',
-                'x-goog-api-key': self.config.api_key,
+                'Authorization': f'Bearer {self.config.api_key}',
             },
             method='POST',
         )
@@ -188,7 +217,7 @@ class GeminiClient:
         try:
             with urlopen(request, timeout=self.config.timeout_seconds) as response:
                 payload = json.loads(response.read().decode('utf-8'))
-            text = payload['candidates'][0]['content']['parts'][0]['text']
+            text = _extract_response_text(payload)
             if not isinstance(text, str) or not text.strip():
                 raise ProviderError('Provider trả output rỗng')
             return ProviderResult(
@@ -210,3 +239,22 @@ class GeminiClient:
             ) from error
         except (URLError, TimeoutError, KeyError, ValueError) as error:
             raise ProviderError(f'provider_failure:{type(error).__name__}') from error
+
+
+def _extract_response_text(payload: dict[str, Any]) -> str:
+    '''Extract assistant text from a raw Responses API response.'''
+    direct = payload.get('output_text')
+    if isinstance(direct, str) and direct.strip():
+        return direct.strip()
+    for output_item in payload.get('output', []):
+        if not isinstance(output_item, dict) or output_item.get('type') != 'message':
+            continue
+        for content_item in output_item.get('content', []):
+            if not isinstance(content_item, dict):
+                continue
+            if content_item.get('type') == 'refusal':
+                raise ProviderError('provider_refusal')
+            text = content_item.get('text')
+            if content_item.get('type') == 'output_text' and isinstance(text, str):
+                return text.strip()
+    raise ProviderError('Provider trả output rỗng')

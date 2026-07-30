@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T13:52:01.940553+00:00",
+  "provider": "openai",
+  "model": "gpt-4o-mini",
+  "case_event_id": "1785419505248-9fe475401c91f8",
+  "page_number": 10,
+  "selected_text_sha256": "3bc915a1eed78768cdebb0c2b6d9ba7cfdf37804934f557b9ee4f46474fc9b66",
+  "question": "hãy giải thích LLM",
+  "status": "insufficient_context",
+  "latency_ms": 3763,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

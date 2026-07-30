@@ -124,16 +124,35 @@
       .library-heading span { color: var(--muted); font-size: 10px; }
 
       .day-card {
+        display: block;
+        width: 100%;
         margin-bottom: 10px;
         overflow: hidden;
         border: 1px solid #dbe4ee;
         border-radius: 12px;
         background: #fff;
+        color: inherit;
+        font: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+      }
+
+      .day-card:not(.active):hover {
+        border-color: #88b7dc;
+        box-shadow: 0 4px 14px rgba(55, 103, 142, .12);
+        transform: translateY(-1px);
+      }
+
+      .day-card:focus-visible {
+        outline: 3px solid rgba(79, 151, 205, .3);
+        outline-offset: 2px;
       }
 
       .day-card.active {
         border-color: #88b7dc;
         box-shadow: 0 0 0 2px rgba(79,151,205,.1);
+        cursor: default;
       }
 
       .day-title {
@@ -831,11 +850,14 @@
         document.querySelectorAll('.day-card').forEach((node) => node.remove());
         const items = Array.isArray(documents) ? documents : [];
         items.forEach((item) => {
-          const card = document.createElement('div');
+          const card = document.createElement('button');
           card.className = 'day-card';
+          card.type = 'button';
+          card.dataset.documentId = String(item.course_id || '');
           if (String(item.course_id) === String(activeDocumentId)) {
             card.classList.add('active');
           }
+          card.setAttribute('aria-pressed', card.classList.contains('active') ? 'true' : 'false');
 
           const cardTitle = document.createElement('div');
           cardTitle.className = 'day-title';
@@ -861,6 +883,17 @@
           pageCount.textContent = `${Number(item.page_count) || 0} trang`;
           material.append(filename, pageCount);
           card.appendChild(material);
+          card.addEventListener('click', () => {
+            const documentId = String(item.course_id || '');
+            if (!documentId || documentId === String(activeDocumentId)) return;
+            post('streamlit:setComponentValue', {
+              value: {
+                event_id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                action: 'switch_document',
+                document_id: documentId,
+              },
+            });
+          });
           heading.before(card);
         });
       }

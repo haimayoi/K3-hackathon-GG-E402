@@ -73,6 +73,33 @@ def test_graceful_fallback_when_provider_fails():
     assert turn.response.quiz is None
 
 
+class UnavailableModelProvider:
+    def generate_json(self, user_payload):
+        raise ProviderError('provider_http_404:model_unavailable')
+
+
+def test_model_unavailable_message_matches_openai_config():
+    turn = run_learning_turn(
+        'Tri thức phải nhập bằng tay', 8, 'Nút thắt là gì?',
+        client=UnavailableModelProvider(), write_trace=False,
+    )
+    assert 'Mô hình OpenAI đang không khả dụng' in turn.response.answer
+    assert 'OPENAI_MODEL' in turn.response.answer
+
+
+def test_parse_openai_feedback_array_into_internal_map():
+    payload = valid_payload()
+    payload['quiz']['misconception_feedback'] = [
+        'Đáp án đúng.',
+        'GPU không phải ý của đoạn.',
+        'Ảnh không phải ý của đoạn.',
+        'Mạng không phải ý của đoạn.',
+    ]
+    response = parse_provider_json(json.dumps(payload, ensure_ascii=False))
+    assert response.quiz is not None
+    assert set(response.quiz.misconception_feedback) == {'1', '2', '3'}
+
+
 class CapturingProvider:
     def __init__(self):
         self.payload = None

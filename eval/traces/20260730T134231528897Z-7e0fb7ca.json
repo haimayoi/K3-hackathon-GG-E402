@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T13:42:31.528897+00:00",
+  "provider": "openai",
+  "model": "gpt-5.6-luna",
+  "case_event_id": "1785418951490-bf9afc7c949e6",
+  "page_number": 9,
+  "selected_text_sha256": "7a93d5aa110bdf1f26df9dabb02d26b8ce057d658bbb6371d55e6b1c0a94704a",
+  "question": "Vì sao hệ chuyên gia tạo ra giá trị nhưng vẫn dẫn đến mùa đông AI lần 2?",
+  "status": "error",
+  "latency_ms": 0,
+  "parse_validation": "not_started",
+  "citation_validation": "not_started",
+  "error": "BLOCKED_BY_API_KEY"
+}

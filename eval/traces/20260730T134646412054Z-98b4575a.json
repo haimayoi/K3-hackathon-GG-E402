@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T13:46:46.412054+00:00",
+  "provider": "openai",
+  "model": "gpt-4o-mini",
+  "case_event_id": "1785419203218-f9e2754a73262",
+  "page_number": 9,
+  "selected_text_sha256": "7a93d5aa110bdf1f26df9dabb02d26b8ce057d658bbb6371d55e6b1c0a94704a",
+  "question": "Vì sao hệ chuyên gia tạo ra giá trị nhưng vẫn dẫn đến mùa đông AI lần 2?",
+  "status": "insufficient_context",
+  "latency_ms": 3158,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

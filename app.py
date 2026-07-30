@@ -1,6 +1,5 @@
 """Entry point for the Streamlit Learning Assistant prototype."""
 
-from dataclasses import replace
 from pathlib import Path
 
 import streamlit as st
@@ -71,10 +70,6 @@ def initialize_session_state() -> None:
         st.session_state.active_document_id = 'd1'
     if 'viewer_document_id' not in st.session_state:
         st.session_state.viewer_document_id = st.session_state.active_document_id
-    if 'runtime_api_key' not in st.session_state:
-        st.session_state.runtime_api_key = ''
-    if 'runtime_model' not in st.session_state:
-        st.session_state.runtime_model = AIConfig.from_env().model
 
 
 def reset_session() -> None:
@@ -131,61 +126,33 @@ def render_scenario_control() -> str:
     return selected_test_case
 
 
-def render_document_control(
+def get_active_document(
     documents: list[dict[str, object]],
 ) -> dict[str, object]:
-    '''Render a stable D1 -> D2 selector and return the active document.'''
+    '''Return the document selected from the embedded learning-material buttons.'''
     by_id = {str(item['course_id']): item for item in documents}
     available_ids = list(by_id)
     if st.session_state.active_document_id not in by_id:
         st.session_state.active_document_id = available_ids[0]
-    selected_id = st.selectbox(
-        'Slide bài học',
-        available_ids,
-        key='active_document_id',
-        format_func=lambda item_id: '{} · {} · {} trang'.format(
-            by_id[item_id]['day_label'],
-            by_id[item_id]['name'],
-            by_id[item_id]['page_count'],
-        ),
-    )
-    if selected_id != st.session_state.viewer_document_id:
-        st.session_state.viewer_document_id = selected_id
+    return by_id[str(st.session_state.active_document_id)]
+
+
+def handle_document_switch(
+    submission: dict[str, object] | None,
+    documents: list[dict[str, object]],
+) -> dict[str, object] | None:
+    '''Apply a Day 1/Day 2 button event and keep question events unchanged.'''
+    if not submission or submission.get('action') != 'switch_document':
+        return submission
+    available_ids = {str(item['course_id']) for item in documents}
+    requested_id = str(submission.get('document_id', ''))
+    if requested_id in available_ids and requested_id != st.session_state.active_document_id:
+        st.session_state.active_document_id = requested_id
+        st.session_state.viewer_document_id = requested_id
         st.session_state.viewer_focus_page = 1
         st.session_state.selector_generation += 1
-    return by_id[selected_id]
-
-
-def render_ai_settings() -> AIConfig:
-    '''Build an in-memory config; never persist or display the secret value.'''
-    environment_config = AIConfig.from_env()
-    has_environment_key = bool(environment_config.api_key)
-    with st.expander('⚙ Cấu hình AI', expanded=not has_environment_key):
-        key_col, model_col = st.columns([1.4, 1])
-        with key_col:
-            st.text_input(
-                'Gemini API key (chỉ giữ trong session)',
-                type='password',
-                key='runtime_api_key',
-                placeholder=(
-                    'Đã nạp key từ .env' if has_environment_key
-                    else 'Dán Gemini API key'
-                ),
-            )
-        with model_col:
-            st.text_input('Model Gemini', key='runtime_model')
-        active_key = st.session_state.runtime_api_key.strip() or environment_config.api_key
-        if environment_config.use_mock:
-            st.info('Đang dùng Mock mode theo USE_MOCK_LLM=true.')
-        elif active_key:
-            st.success('API key đã sẵn sàng. Giá trị key không được ghi vào log.')
-        else:
-            st.warning('Chưa có API key. Có thể nhập tại đây hoặc cấu hình .env.')
-    return replace(
-        environment_config,
-        api_key=active_key,
-        model=st.session_state.runtime_model.strip() or environment_config.model,
-    )
+        st.rerun()
+    return None
 
 
 def apply_page_styles() -> None:
@@ -381,10 +348,10 @@ def main() -> None:
             st.rerun()
 
     documents = load_course_documents()
-    active_document = render_document_control(documents)
+    active_document = get_active_document(documents)
     test_case_id = render_scenario_control()
     scenario = TEST_CASES[test_case_id]
-    ai_config = render_ai_settings()
+    ai_config = AIConfig.from_env()
 
     left_col, right_col = st.columns([1.34, 0.66], gap="small")
     with left_col:
@@ -409,6 +376,7 @@ def main() -> None:
             active_document_id=str(active_document['course_id']),
             pages=list(active_document["pages"]),
         )
+        submission = handle_document_switch(submission, documents)
     with right_col:
         render_chatbot_panel(
             submission,

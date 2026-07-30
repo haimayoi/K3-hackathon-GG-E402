@@ -21,7 +21,9 @@ không code fence, với đúng shape:
 - quiz: null hoặc object có đúng các key question, options, correct_option_index,
   correct_explanation, misconception_feedback, retry_question, retry_options,
   correct_retry_option_index, retry_correct_explanation, retry_wrong_explanation.
-- misconception_feedback là object có key string index cho đúng ba đáp án sai.
+- misconception_feedback là array đúng 4 chuỗi theo thứ tự options. Feedback tại
+  correct_option_index có thể là chuỗi xác nhận ngắn; ba phần tử còn lại phải chỉ ra
+  điểm hiểu sai tương ứng.
 
 ## Ràng buộc cứng
 
@@ -29,6 +31,6 @@ không code fence, với đúng shape:
 2. grounded phải có citation. Quote phải là substring nguyên văn của selected_text sau
    khi chuẩn hóa khoảng trắng và page phải đúng page_number.
 3. Bốn option khác nhau và correct_option_index chỉ định đúng một đáp án.
-4. misconception_feedback có đúng ba key của ba option sai và chỉ ra điểm hiểu sai.
+4. misconception_feedback có đúng 4 phần tử; ba option sai phải có feedback chỉ ra điểm hiểu sai.
 5. Quiz đo ý nghĩa vừa giải thích; không tiết lộ đáp án trong wording câu hỏi.
 6. Không hỏi lại điều selected text đã nói rõ. Không bịa page, quote hoặc fact.
