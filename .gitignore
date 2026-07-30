@@ -1,6 +1,25 @@
 .DS_Store
 node_modules/
 *.env
-tmp_mining*
-.env
+.venv/
 __pycache__/
+*.py[cod]
+.streamlit/secrets.toml
+codebase/
+eval/runtime_traces.jsonl
+.pytest_cache/
+demo-slides/
+eval/live_call_traces.jsonl
+*.runtime.log
+
+# Provided course data pack — must not be committed to the submission repo
+# (org rule: "Không đổ nguyên file lên repo nộp bài của nhóm").
+# Files stay on disk locally; the app still reads them from data/vlearn-pack/.
+data/vlearn-pack/chatlog/chat_history_anonymized_for_hackathon.csv
+data/vlearn-pack/transcript/transcript-*.md
+data/vlearn-pack/slides/*.pdf
+
+# Local dev/debug scratch — not submission artifacts
+tmp/
+tmp_mining*.py
+tmp_mining_output*.md

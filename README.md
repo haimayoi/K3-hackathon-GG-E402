@@ -1,96 +1,147 @@
-# Mini Hackathon AI — Batch 03
+# VLearn Learning Check Agent
 
-**SPEC → Prototype → Demo.** Đây không phải cuộc thi code — đây là cuộc thi **tư duy sản phẩm AI**.
+A bounded, source-grounded comprehension check for learners using the VLearn tutor. After a learner selects course text and asks a question, the app validates the cited page, answers from that context, creates exactly one four-option quiz, scores the selected answer deterministically, gives option-specific misconception feedback, and offers one easier retry.
 
-- Thời lượng: **1,5 ngày** (một ngày build + một buổi demo)
-- Nhóm: **4-5 người** · zone tối đa 5 nhóm · thi theo lớp
+This is a hackathon prototype, not an open-ended autonomous agent. Unknown group and zone metadata remain intentionally unfilled: **HUMAN ACTION REQUIRED — Group [XX], Zone [X]**.
 
-## Bắt đầu từ đâu?
+## What works
 
-1. Đọc **`01-de-bai.md`** để chọn hướng và hiểu tiêu chí.
-2. Mở **`02-guide.md`** — hướng dẫn từng giai đoạn, đứng ở đâu đọc mục đó.
-3. Viết spec theo **`03-template-ai-spec.md`** — deliverable trung tâm của cả sự kiện.
-4. Đọc **`04-rubric.md`** ngay từ đầu — biết trước bài được chấm theo tiêu chí nào.
+- Select either supplied course slide deck and an exact PDF page.
+- Highlight text on that page and ask a contextual tutor question.
+- Deterministically verify that the selection occurs on the cited page.
+- Run the bounded state machine:
+  `RECEIVED_CONTEXT → ELIGIBILITY_CHECK → SOURCE_VALIDATION → QUIZ_GENERATION → QUIZ_VALIDATION → PRESENTED → ANSWER_EVALUATION → FEEDBACK → RETRY or COMPLETED`.
+- Safely exit through `ABSTAINED` or `ERROR_FALLBACK` with explicit reason codes.
+- Validate structured model output before display; malformed output gets at most one repair attempt.
+- Display one correct answer and a targeted explanation for every wrong option.
+- Attach a traceable source ID such as `d1:p29` and show a collapsible safe trace.
+- Reset, skip/continue, handle insufficient context, and sanitize provider failures.
 
-| File / thư mục | Nội dung |
+## Architecture
+
+```text
+PDF page selection
+  → deterministic eligibility and page/selection validation
+  → minimum relevant source window
+  → one structured OpenAI generation
+  → deterministic schema + source validation
+  → Streamlit presentation
+  → deterministic answer evaluation
+  → easier retry or completion
+```
+
+Key files:
+
+- `codebase/app.py` — canonical Streamlit entry point.
+- `codebase/components/course_materials.py` — deterministic two-PDF/page lookup; no embeddings or vector database.
+- `codebase/components/learning_agent.py` — bounded state machine, reason codes, model adapter, validation, attempt limits, trace metadata, and scoring.
+- `codebase/components/chatbot_panel.py`, `codebase/components/quiz_panel.py`, `codebase/components/document_panel.py` — user experience.
+- `tests/test_learning_agent.py` — offline behavior and guardrail suite.
+- `eval/golden_set.jsonl` — preserved 28-case locked evaluation set.
+- `eval/run_golden_set.py` — real-provider evaluation with immutable run IDs.
+
+`codebase/components/ai_client.py` is a privacy-hardened compatibility adapter for the preserved golden-set contract. `codebase/components/mock_data.py` is a historical CP2 artifact, not imported by the canonical app. The prototype now lives under `codebase/` per the submission structure (moved from repo root); `tests/` and `eval/` add `codebase/` to `sys.path` to import it.
+
+## Setup
+
+Python 3.11 is recommended.
+
+```powershell
+py -3.11 -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r codebase/requirements.txt
+Copy-Item .env.example .env
+```
+
+Configure `.env` locally:
+
+```dotenv
+OPENAI_API_KEY=your_key_here
+OPENAI_MODEL=gpt-4o-mini
+```
+
+`.env` and `.streamlit/secrets.toml` are ignored. Never commit keys.
+
+## Launch
+
+Run from the repo root (not from inside `codebase/`) so `data/vlearn-pack/`, `.env`, and `.streamlit/config.toml` resolve correctly:
+
+```powershell
+.\.venv\Scripts\python.exe -m streamlit run codebase/app.py
+```
+
+Demo flow:
+
+1. Choose Day 1, page 29.
+2. Highlight the `top_p` explanation and ask “top_p khác temperature như thế nào?”.
+3. Answer the generated quiz correctly.
+4. Repeat and choose a wrong option to show targeted misconception feedback and the easier retry.
+5. Ask `2 + 2 = ?` from selected course text to show `outside_course_scope` abstention.
+6. Expand **Developer/demo trace** to show source, model, latency, validation, prompt hash/version, artifact version, and transitions without chain-of-thought.
+
+## Test and evaluation
+
+```powershell
+# Compile
+.\.venv\Scripts\python.exe -m compileall -q codebase eval tests
+
+# Offline tests (no API key or network)
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+
+# Real 28-case golden-set evaluation
+.\.venv\Scripts\python.exe eval\run_golden_set.py
+```
+
+Every live run uses `run-live-<UTC timestamp>-<random ID>` so previous evidence is never overwritten. Automated results cover status, schema, option count, correct-index validity, misconception coverage, state transitions, and retry limits. Groundedness, concept alignment, and domain correctness remain explicitly **HUMAN REVIEW REQUIRED** unless a deterministic check is reliable. A status/schema-only run must not be described as “100% accurate.”
+
+The locked quality bar remains unchanged in `spec.md`: at least 80% status match, plus zero invented information/concepts outside the supplied passage across the golden set.
+
+## Reason codes
+
+`eligible`, `insufficient_context`, `outside_course_scope`, `source_not_found`, `source_mismatch`, `schema_invalid`, `verification_failed`, and `provider_error`.
+
+## Real versus historical mock behavior
+
+Canonical `codebase/app.py`:
+
+- Real OpenAI structured generation: tutor answer, primary quiz, misconceptions, and easier retry.
+- Real deterministic PDF/page lookup and selection verification.
+- Deterministic scoring and bounded state transitions.
+- No displayed confidence score; the former fixed `0.87` was removed from the live flow.
+
+Historical only:
+
+- `codebase/components/mock_data.py` and `STREAMLIT_LEARNING_CHATBOT_FLOW.md` preserve the CP2 mock prototype and original brief for audit history (fixed answer/confidence/retry values not used by the canonical app). The earlier CP2-era `codebase/app.py` (a different, fully-mocked flow) is preserved in git history, not in the working tree — see `codebase/README.md` for the note explaining that history.
+
+## Privacy and safety
+
+- The model receives only the selected text plus a small window from one verified page.
+- Runtime traces store UUIDs, state/reason metadata, model, prompt version/hash, source ID, latency, validation outcome, error category, character counts, and text hashes—not full learner text, secrets, raw provider errors, or chain-of-thought.
+- The app treats instructions embedded in course material as untrusted source data.
+- Results support self-study only; they are not grades or learner profiling.
+
+## Limitations
+
+- Lexical grounding validation catches source/citation mismatch but cannot prove full semantic correctness. Human review remains required for groundedness, concept alignment, and sibling-concept accuracy.
+- PDF text extraction quality depends on the supplied files.
+- No authentication, persistence layer, learner profile, vector search, or autonomous tool loop.
+- Provider availability and latency affect live generation.
+- User validation evidence has not been fabricated; see `validation/README.md` for required human work.
+
+## Team and evidence
+
+Preserved assignment from `spec.md`:
+
+| Area | Owner |
 |---|---|
-| `01-de-bai.md` | Đề bài 3 hướng · 5 tiêu chí nghiệm thu · ràng buộc chung |
-| `02-guide.md` | Hướng dẫn 5 giai đoạn: khám phá → spec → build → đo & validate → demo |
-| `03-template-ai-spec.md` | Template AI Spec (nộp 23:59 ngày 1) |
-| `04-rubric.md` | Rubric 100 điểm (25 nộp checkpoint + 75 chấm bài) + checklist xác minh 6 mốc |
-| `data/` | Dữ liệu thật đã ẩn danh: chatlog VLearn tutor + 6 transcript bài giảng + 2 bộ slide bản hackathon — dùng để tìm bằng chứng và xây golden set |
-| `tham-khao/` | JTBD Playbook (PDF) + worksheet JTBD đầy đủ — đọc khi muốn đào sâu |
+| Evidence and specification | Lê Hà Hải Vân |
+| Prototype build | Hà Duyên Hùng |
+| Prompt and golden-set evaluation | Tạ Minh Đức |
 
-## Lịch — 6 mốc
+Group and zone: **HUMAN ACTION REQUIRED — [XX] / [X]**.
 
-| Mốc | Khoá 3 | Khoá 4 |
-|---|---|---|
-| Khai mạc + phát đề | 09:00 ngày 1 | 14:00 ngày 1 |
-| CP1 · Chốt Canvas | 10:00 ngày 1 | 15:00 ngày 1 |
-| CP2 · Show được thứ bấm được | 12:00 ngày 1 | 17:00 ngày 1 |
-| CP3 · AI chạy thật + đo lượt đầu | 16:00 ngày 1 | 10:30 ngày 2 |
-| CP4 · Chốt tiến độ — spec nộp hạn cứng **23:59 ngày 1** | 17:30 ngày 1 | 12:00 ngày 2 |
-| CP5 · Xác minh + validation + dry run | 09:00 ngày 2 | 14:00 ngày 2 |
-| CP6 · Demo | 10:00 ngày 2 | 15:00 ngày 2 |
+## Restricted data warning
 
-Mỗi mốc cần show gì và được xác minh thế nào: xem bảng trong `04-rubric.md`.
+The two slide PDFs, six full transcripts, and the anonymized chatlog CSV have been untracked from Git (`git rm --cached` + `.gitignore`) because the data pack's own documentation forbids committing raw files to a submission repository. They remain on disk locally so the app keeps working; a fresh clone of this repo will need its own copy of `data/vlearn-pack/` from the organizers to run the app or regenerate the golden set. The two short data-documentation files (`chatlog/DATA_DICTIONARY.md`, package `README.md` files) stay tracked since they describe structure, not raw content.
 
-## Nộp bài
-
-Một repo nhóm, cấu trúc như sau. Spec chốt lúc 23:59 ngày 1; bản hoàn chỉnh trước CP6.
-
-```
-repo/
-├── README.md          ← thành viên (mã HV + tên) + phân công có tên từng phần
-├── spec.md            ← AI Spec theo 03-template-ai-spec.md
-├── demo-slides.pdf    ← slide 6 trang theo 02-guide.md §5.1
-├── codebase/          ← prototype (ghi rõ phần nào mock)
-├── eval/              ← golden set + bảng kết quả các lượt chạy
-├── validation/        ← feedback log từ vòng user test
-└── reflection/        ← mỗi người 1 file
-```
-
-## Chấm điểm
-
-Tổng **100 điểm = 25 điểm nộp checkpoint + 75 điểm chấm bài nộp**. Chi tiết từng ý điểm: `04-rubric.md`.
-
-**25 điểm nộp — mỗi checkpoint 5 điểm (CP1-CP5):** nộp đúng hạn → 5 điểm · nộp muộn → 0 điểm cho mốc đó. Mỗi thành viên nộp riêng, cả nhóm dùng chung một link repo.
-
-**75 điểm chấm — trên artifact trong repo, mỗi con điểm trỏ về một file:**
-
-| Khối | Điểm | Chấm trên file nào |
-|---|---|---|
-| R1 · Bằng chứng & impact | 15 | `spec.md` §1-§2 + log khảo sát/mining |
-| R2 · Lát cắt & thiết kế | 15 | `spec.md` §4 |
-| R3 · Chỗ khó & kịch bản rủi ro | 11 | `spec.md` §5-§6 |
-| R4 · Kiểm thử | 15 | `spec.md` §7 + `eval/` |
-| R5 · Prototype chạy được | 8 | `codebase/` + demo |
-| R6 · Validation với user | 8 | `validation/` |
-| R7 · Quy trình & repo | 3 | cấu trúc repo |
-
-Ba điều nên biết trước khi làm:
-
-- Điểm dựa trên **chuỗi quyết định và bằng chứng**, không dựa trên mức độ hoành tráng của sản phẩm.
-- Kết quả đo **ghi nhận trung thực** — kể cả khi không đạt mục tiêu nhóm tự đặt — vẫn được tính đủ điểm. Số liệu bị chỉnh sửa hoặc che giấu sẽ không được tính.
-- Reflection cá nhân chấm riêng theo rubric của khoá. Điểm vòng demo, chấm chéo trong zone và thưởng thêm (nếu có) theo thể lệ công bố lúc khai mạc.
-
-## Luật chung
-
-1. Prototype có 3 mức **Sketch / Mock / Working** — mức nào cũng bắt buộc **≥1 lời gọi AI chạy thật**.
-2. **Vibe-coding rule:** dùng AI để build thoải mái, nhưng không giải thích được phần có tên mình thì phần đó 0 điểm (kiểm tra tại CP5).
-3. **Quality bar** chốt tại spec.md 23:59 ngày 1 và giữ nguyên sau đó.
-4. Chỉ dùng dữ liệu trong `data/` hoặc dữ liệu giả tự sinh — không dùng dữ liệu thật của người thật. Không commit API key.
-5. Tuân thủ **quy định bảo mật dữ liệu** bên dưới — đây là điều kiện để được cấp data.
-
-## Bảo mật dữ liệu được cung cấp
-
-Dữ liệu trong `data/` là dữ liệu thật của khoá học (đã ẩn danh), cấp riêng cho hackathon này. Khi nhận data, nhóm cam kết:
-
-1. **Chỉ dùng trong phạm vi hackathon** — cho việc tìm bằng chứng, xây golden set và build prototype. Không dùng cho mục đích khác.
-2. **Không chia sẻ ra ngoài khoá học** — không đăng lên mạng xã hội, không gửi cho người ngoài, không đưa vào bất kỳ dataset hay repo công khai nào.
-3. **Không commit data pack vào repo nộp bài** — repo nhóm chỉ chứa trích dẫn ngắn để minh hoạ (vài dòng); golden set trích từ data ghi rõ mã đoạn/mã hội thoại thay vì dán nguyên văn dài.
-4. **Cẩn trọng khi đưa data vào công cụ ngoài** — chỉ đưa phần tối thiểu cần cho việc đang làm; lưu ý API/công cụ free tier có thể dùng dữ liệu để huấn luyện (xem `02-guide.md` §3.4).
-5. **Không cố suy ngược danh tính** từ dữ liệu đã ẩn danh ([học viên], mã U/C/T/M).
-6. Sau sự kiện, **xoá các bản sao data pack** khỏi máy cá nhân và các công cụ đã upload nếu ban tổ chức yêu cầu.
-
-Vi phạm được xử lý theo quy định của khoá và có thể ảnh hưởng trực tiếp đến điểm của nhóm.
+**Past commits still contain the raw files in Git history** (this untrack only stops *future* commits). Rewriting history to remove them is a separate, more invasive step — do not do this without team agreement, since it force-changes shared history. Do not make this repository public until that is resolved.

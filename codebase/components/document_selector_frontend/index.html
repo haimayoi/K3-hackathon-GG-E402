@@ -1,0 +1,650 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="./pdfjs/pdf_viewer.css" />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #172033;
+        --muted: #657086;
+        --line: #e4e8ef;
+        --panel: #ffffff;
+        --soft: #f6f8fb;
+        --accent: #635bff;
+        --accent-dark: #5148e5;
+        --selection: rgba(99, 91, 255, .24);
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        background: transparent;
+        color: var(--ink);
+        font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      }
+
+      .viewer {
+        position: relative;
+        min-height: 640px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: 0 12px 36px rgba(28, 38, 58, 0.07);
+      }
+
+      .toolbar {
+        display: flex;
+        min-height: 68px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.96);
+      }
+
+      .toolbar-title {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 11px;
+      }
+
+      .file-icon {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        flex: 0 0 36px;
+        place-items: center;
+        border-radius: 10px;
+        background: #eeecff;
+        color: var(--accent);
+      }
+
+      .title-wrap { min-width: 0; }
+
+      .eyebrow {
+        margin: 0 0 2px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        overflow: hidden;
+        margin: 0;
+        font-size: 15px;
+        font-weight: 720;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .selection-hint {
+        flex: 0 0 auto;
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: var(--soft);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .selection-actions {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .ask-page {
+        padding: 8px 11px;
+        border: 0;
+        border-radius: 999px;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .ask-page:hover { background: var(--accent-dark); }
+      .ask-page:disabled { cursor: not-allowed; opacity: .45; }
+
+
+      .clear-selection {
+        display: none;
+        padding: 7px 10px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--accent-dark);
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .clear-selection.visible { display: inline-flex; }
+      .clear-selection:hover { background: #eeecff; }
+
+      .document-scroll {
+        position: relative;
+        display: grid;
+        height: 570px;
+        place-items: center;
+        overflow: hidden;
+        background: #dfe3e9;
+        touch-action: pan-y;
+        overscroll-behavior: contain;
+        outline: none;
+      }
+
+      .document-scroll:focus-visible {
+        box-shadow: inset 0 0 0 3px rgba(99, 91, 255, .35);
+      }
+
+      .pdf-stage {
+        position: relative;
+        box-shadow: 0 8px 28px rgba(23, 32, 51, .16);
+      }
+
+      .pdf-stage canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
+      .pdf-stage .textLayer {
+        z-index: 2;
+        user-select: text;
+        -webkit-user-select: text;
+      }
+
+      .pdf-stage .textLayer span {
+        user-select: text;
+        -webkit-user-select: text;
+      }
+
+      .pdf-stage .textLayer ::selection {
+        background: var(--selection);
+        color: rgba(23, 32, 51, .92);
+      }
+
+      .page-status {
+        position: absolute;
+        z-index: 4;
+        right: 14px;
+        bottom: 14px;
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: rgba(23, 32, 51, .82);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 700;
+        pointer-events: none;
+      }
+
+      ::highlight(active-passage) {
+        background: var(--selection);
+        color: rgba(23, 32, 51, .92);
+      }
+
+      .selection-overlay {
+        position: absolute;
+        z-index: 2;
+        border-radius: 3px;
+        background: var(--selection);
+        pointer-events: none;
+        mix-blend-mode: multiply;
+      }
+
+      .popover {
+        position: absolute;
+        z-index: 20;
+        display: none;
+        width: min(360px, calc(100% - 28px));
+        padding: 12px;
+        border: 1px solid #dfe3eb;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 18px 50px rgba(20, 29, 47, .18);
+      }
+
+      .popover.visible { display: block; animation: rise .15s ease-out; }
+
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .popover-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .close {
+        display: grid;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        place-items: center;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 18px;
+      }
+
+      .close:hover { background: var(--soft); }
+
+      .input-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 42px;
+        max-height: 112px;
+        resize: none;
+        padding: 10px 11px;
+        border: 1px solid #d7dce6;
+        border-radius: 10px;
+        outline: none;
+        color: var(--ink);
+        font: 14px/1.4 "Segoe UI", Tahoma, Arial, sans-serif;
+      }
+
+      textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(99, 91, 255, .12);
+      }
+
+      .send {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        place-items: center;
+        border: 0;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+      }
+
+      .send:hover { background: var(--accent-dark); }
+      .send:disabled { cursor: not-allowed; opacity: .45; }
+
+      .help {
+        margin: 7px 2px 0;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      @media (max-width: 640px) {
+        .selection-hint { display: none; }
+        article { padding: 30px 24px 80px; font-size: 17px; }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="viewer" id="viewer">
+      <header class="toolbar">
+        <div class="toolbar-title">
+          <span class="file-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          </span>
+          <div class="title-wrap">
+            <p class="eyebrow">Document Viewer</p>
+            <h1 id="document-title"></h1>
+          </div>
+        </div>
+        <div class="selection-actions">
+          <span class="selection-hint">B&#244;i &#273;en &#273;o&#7841;n v&#259;n &#273;&#7875; &#273;&#7863;t c&#226;u h&#7887;i</span>
+          <button class="ask-page" id="ask-page" type="button">H&#7887;i v&#7873; trang n&#224;y</button>
+          <button class="clear-selection" id="clear-selection" type="button">B&#7887; ch&#7885;n</button>
+        </div>
+      </header>
+
+      <div class="document-scroll" id="document-scroll" tabindex="0" role="region" aria-label="Cu&#7897;n &#273;&#7875; chuy&#7875;n trang slide">
+        <div class="pdf-stage" id="pdf-stage">
+          <canvas id="pdf-canvas"></canvas>
+          <div class="textLayer" id="text-layer"></div>
+        </div>
+        <span class="page-status" id="page-status"></span>
+      </div>
+
+      <form class="popover" id="popover">
+        <div class="popover-label">
+          <span>Hỏi về đoạn này</span>
+          <button class="close" id="close" type="button" aria-label="Đóng">×</button>
+        </div>
+        <div class="input-row">
+          <textarea id="question" rows="1" placeholder="Nhập câu hỏi của bạn…" aria-label="Câu hỏi"></textarea>
+          <button class="send" id="send" type="submit" disabled aria-label="Gửi câu hỏi">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+          </button>
+        </div>
+        <p class="help">Enter để gửi · Shift + Enter để xuống dòng</p>
+      </form>
+    </section>
+
+    <script type="module">
+      import * as pdfjsLib from "./pdfjs/pdf.mjs";
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "./pdfjs/pdf.worker.mjs";
+      const API_VERSION = 1;
+      const viewer = document.getElementById("viewer");
+      const scroller = document.getElementById("document-scroll");
+      const article = document.getElementById("text-layer");
+      const pdfStage = document.getElementById("pdf-stage");
+      const pdfCanvas = document.getElementById("pdf-canvas");
+      const title = document.getElementById("document-title");
+      const popover = document.getElementById("popover");
+      const question = document.getElementById("question");
+      const send = document.getElementById("send");
+      const close = document.getElementById("close");
+      const clearSelectionButton = document.getElementById("clear-selection");
+      const askPageButton = document.getElementById("ask-page");
+      const pageStatus = document.getElementById("page-status");
+
+      let selectedText = "";
+      let anchorRect = null;
+      let selectedRange = null;
+      let lastPayload = "";
+      let currentPage = 1;
+      let pageCount = 1;
+      let wheelAccumulator = 0;
+      let navigationLocked = false;
+      let touchStartY = null;
+      let pageTexts = [];
+      let pdfDocument = null;
+      let currentPdfPayload = "";
+      let renderGeneration = 0;
+
+      function post(type, payload = {}) {
+        window.parent.postMessage({ isStreamlitMessage: true, type, ...payload }, "*");
+      }
+
+      function setFrameHeight() {
+        post("streamlit:setFrameHeight", { height: 656 });
+      }
+
+      function hidePopover(clearSelection = false) {
+        popover.classList.remove("visible");
+        question.value = "";
+        send.disabled = true;
+        if (clearSelection) window.getSelection()?.removeAllRanges();
+      }
+
+      function clearActiveSelection() {
+        hidePopover(true);
+        selectedText = "";
+        selectedRange = null;
+        anchorRect = null;
+        window.CSS?.highlights?.delete("active-passage");
+        clearOverlayHighlight();
+        clearSelectionButton.classList.remove("visible");
+      }
+
+      function clearOverlayHighlight() {
+        viewer.querySelectorAll(".selection-overlay").forEach((node) => node.remove());
+      }
+
+      function renderOverlayHighlight() {
+        clearOverlayHighlight();
+        if (!selectedRange) return;
+        const viewerRect = viewer.getBoundingClientRect();
+        selectedRange.getClientRects().forEach((rect) => {
+          if (!rect.width || !rect.height) return;
+          const overlay = document.createElement("span");
+          overlay.className = "selection-overlay";
+          overlay.style.left = `${rect.left - viewerRect.left}px`;
+          overlay.style.top = `${rect.top - viewerRect.top}px`;
+          overlay.style.width = `${rect.width}px`;
+          overlay.style.height = `${rect.height}px`;
+          viewer.appendChild(overlay);
+        });
+      }
+
+      function persistHighlight(range) {
+        selectedRange = range.cloneRange();
+        clearSelectionButton.classList.add("visible");
+        if (window.CSS?.highlights && window.Highlight) {
+          CSS.highlights.set("active-passage", new Highlight(selectedRange));
+          clearOverlayHighlight();
+        } else {
+          renderOverlayHighlight();
+        }
+      }
+
+      function positionPopover(rect) {
+        const width = Math.min(360, viewer.clientWidth - 28);
+        const preferredLeft = rect.left + rect.width / 2 - width / 2;
+        const left = Math.max(14, Math.min(preferredLeft, viewer.clientWidth - width - 14));
+        const below = rect.bottom + 10;
+        const estimatedHeight = 142;
+        const top = below + estimatedHeight < viewer.clientHeight
+          ? below
+          : Math.max(80, rect.top - estimatedHeight - 10);
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+      }
+
+      function captureSelection() {
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed || !selection.rangeCount) {
+          clearActiveSelection();
+          return;
+        }
+        const range = selection.getRangeAt(0);
+        if (!article.contains(range.commonAncestorContainer)) return;
+        const text = selection.toString().replace(/\s+/g, " ").trim();
+        if (!text) return;
+        selectedText = text;
+        persistHighlight(range);
+        question.value = `Giải thích //${text}//`;
+        question.dispatchEvent(new Event("input"));
+        anchorRect = range.getBoundingClientRect();
+        positionPopover(anchorRect);
+        popover.classList.add("visible");
+        setTimeout(() => question.focus(), 0);
+      }
+
+      function base64ToBytes(encoded) {
+        const binary = atob(encoded);
+        const bytes = new Uint8Array(binary.length);
+        for (let index = 0; index < binary.length; index += 1) {
+          bytes[index] = binary.charCodeAt(index);
+        }
+        return bytes;
+      }
+
+      async function loadPdf(encoded) {
+        if (!encoded || encoded === currentPdfPayload) return;
+        currentPdfPayload = encoded;
+        pdfDocument = await pdfjsLib.getDocument({ data: base64ToBytes(encoded) }).promise;
+      }
+
+      async function renderPdfPage(pageNumber) {
+        if (!pdfDocument) return;
+        const generation = ++renderGeneration;
+        const pdfPage = await pdfDocument.getPage(pageNumber);
+        const unscaled = pdfPage.getViewport({ scale: 1 });
+        const availableWidth = Math.max(100, scroller.clientWidth - 24);
+        const availableHeight = Math.max(100, scroller.clientHeight - 24);
+        const scale = Math.min(availableWidth / unscaled.width, availableHeight / unscaled.height);
+        const viewport = pdfPage.getViewport({ scale });
+        if (generation !== renderGeneration) return;
+
+        const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+        pdfStage.style.width = `${viewport.width}px`;
+        pdfStage.style.height = `${viewport.height}px`;
+        pdfStage.style.setProperty("--total-scale-factor", viewport.scale);
+        pdfCanvas.width = Math.floor(viewport.width * outputScale);
+        pdfCanvas.height = Math.floor(viewport.height * outputScale);
+        pdfCanvas.style.width = `${viewport.width}px`;
+        pdfCanvas.style.height = `${viewport.height}px`;
+        const context = pdfCanvas.getContext("2d", { alpha: false });
+        await pdfPage.render({
+          canvasContext: context,
+          viewport,
+          transform: outputScale === 1 ? null : [outputScale, 0, 0, outputScale, 0, 0],
+        }).promise;
+        if (generation !== renderGeneration) return;
+
+        article.replaceChildren();
+        const textContent = await pdfPage.getTextContent();
+        const textLayer = new pdfjsLib.TextLayer({
+          textContentSource: textContent,
+          container: article,
+          viewport,
+        });
+        await textLayer.render();
+      }
+
+      async function renderDocument(args) {
+        const pageNumber = Math.max(1, Number(args.page) || 1);
+        currentPage = pageNumber;
+        pageCount = Math.max(currentPage, Number(args.page_count) || 1);
+        pageStatus.textContent = `${currentPage} / ${pageCount}`;
+        pageTexts = Array.isArray(args.page_texts) ? args.page_texts : [];
+        const payload = JSON.stringify([args.title, pageNumber, pageCount, args.pdf_base64?.length]);
+        if (payload === lastPayload) return;
+        lastPayload = payload;
+        title.textContent = args.title || "Tài liệu học tập";
+        clearActiveSelection();
+        selectedText = String(pageTexts[currentPage - 1] || "").replace(/\s+/g, " ").trim();
+        askPageButton.disabled = !selectedText;
+        await loadPdf(args.pdf_base64);
+        await renderPdfPage(currentPage);
+      }
+      async function navigatePage(delta) {
+        if (navigationLocked) return;
+        const target = Math.max(1, Math.min(pageCount, currentPage + delta));
+        if (target === currentPage) return;
+        navigationLocked = true;
+        currentPage = target;
+        pageStatus.textContent = `${currentPage} / ${pageCount}`;
+        clearActiveSelection();
+        selectedText = String(pageTexts[currentPage - 1] || "").replace(/\s+/g, " ").trim();
+        askPageButton.disabled = !selectedText;
+        try {
+          await renderPdfPage(currentPage);
+          post("streamlit:setComponentValue", {
+            value: {
+              event_id: `navigation-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+              page: currentPage,
+            },
+          });
+        } finally {
+          navigationLocked = false;
+        }
+      }
+      scroller.addEventListener("wheel", (event) => {
+        event.preventDefault();
+        wheelAccumulator += event.deltaY;
+        if (Math.abs(wheelAccumulator) < 70) return;
+        navigatePage(wheelAccumulator > 0 ? 1 : -1);
+        wheelAccumulator = 0;
+      }, { passive: false });
+
+      scroller.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowDown" || event.key === "PageDown") {
+          event.preventDefault();
+          navigatePage(1);
+        } else if (event.key === "ArrowUp" || event.key === "PageUp") {
+          event.preventDefault();
+          navigatePage(-1);
+        }
+      });
+
+      scroller.addEventListener("touchstart", (event) => {
+        touchStartY = event.changedTouches[0]?.clientY ?? null;
+      }, { passive: true });
+
+      scroller.addEventListener("touchend", (event) => {
+        if (touchStartY === null) return;
+        const distance = touchStartY - (event.changedTouches[0]?.clientY ?? touchStartY);
+        touchStartY = null;
+        if (Math.abs(distance) >= 45) navigatePage(distance > 0 ? 1 : -1);
+      }, { passive: true });
+
+
+      function openPageQuestion() {
+        if (!selectedText) return;
+        positionPopover({ left: viewer.clientWidth - 200, width: 0, top: 70, bottom: 70 });
+        popover.classList.add("visible");
+        setTimeout(() => question.focus(), 0);
+      }
+
+      askPageButton.addEventListener("click", openPageQuestion);
+      article.addEventListener("mouseup", () => setTimeout(captureSelection, 0));
+      article.addEventListener("keyup", () => setTimeout(captureSelection, 0));
+      scroller.addEventListener("scroll", () => {
+        if (popover.classList.contains("visible") && anchorRect) hidePopover(false);
+        if (!(window.CSS?.highlights && window.Highlight)) renderOverlayHighlight();
+      });
+
+      window.addEventListener("resize", () => {
+        if (!(window.CSS?.highlights && window.Highlight)) renderOverlayHighlight();
+      });
+
+      question.addEventListener("input", () => {
+        send.disabled = !question.value.trim();
+        question.style.height = "auto";
+        question.style.height = `${Math.min(question.scrollHeight, 112)}px`;
+      });
+
+      question.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          if (question.value.trim()) popover.requestSubmit();
+        }
+      });
+
+      close.addEventListener("click", clearActiveSelection);
+      clearSelectionButton.addEventListener("click", clearActiveSelection);
+      viewer.addEventListener("mousedown", (event) => {
+        if (!selectedRange || popover.contains(event.target) || article.contains(event.target)) return;
+        clearActiveSelection();
+      });
+      popover.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const text = question.value.trim();
+        if (!text || !selectedText) return;
+        post("streamlit:setComponentValue", {
+          value: {
+            event_id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            selected_text: selectedText,
+            question: text,
+            page: currentPage,
+          },
+        });
+        hidePopover(true);
+      });
+
+      window.addEventListener("message", (event) => {
+        if (event.data?.type !== "streamlit:render") return;
+        renderDocument(event.data.args || {});
+        setFrameHeight();
+      });
+
+      post("streamlit:componentReady", { apiVersion: API_VERSION });
+      setFrameHeight();
+    </script>
+  </body>
+</html>
