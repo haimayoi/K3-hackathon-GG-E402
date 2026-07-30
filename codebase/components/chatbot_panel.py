@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from components.course_materials import CoursePage
+from components.course_materials import CoursePage, relevant_context
 from components.learning_agent import AgentState, run_learning_check
 from components.quiz_panel import render_quiz_messages
 
@@ -45,6 +45,7 @@ def _consume_submission(
     document_name = str(
         (document or {}).get("name") or (page.document_title if page else "Tài liệu không xác định")
     )
+    source_ctx = relevant_context(page, selected_text) if page else selected_text
     st.session_state.chat_turns.append(
         {
             "id": event_id,
@@ -53,10 +54,11 @@ def _consume_submission(
             "page_number": page_number,
             "source_id": page.source_id if page else None,
             "selected_text": selected_text,
+            "source_context": source_ctx,
             "question": question,
             "run": run,
-            "quiz_answer_index": None,
-            "retry_answer_index": None,
+            "attempts": [],
+            "completed": False,
             "skipped": False,
         }
     )
@@ -102,7 +104,7 @@ def _render_turn(turn: dict[str, object]) -> None:
             f"đoạn đã chọn: {str(turn['selected_text'])[:180]}"
         )
 
-    if run.state == AgentState.PRESENTED and run.artifact:
+    if run.artifact is not None:
         with st.chat_message("assistant", avatar="🧭"):
             st.write(run.artifact.tutor_answer)
             st.markdown(

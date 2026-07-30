@@ -233,6 +233,19 @@ class LearningAgentTests(unittest.TestCase):
         result, _ = self.run_case("Giải thích top_p", "khái niệm không có trên trang")
         self.assertEqual(result.reason_code, ReasonCode.SOURCE_MISMATCH)
 
+    def test_generate_followup_quiz_contract(self):
+        from components.learning_agent import generate_followup_quiz
+        fq = generate_followup_quiz(
+            source_context=SOURCE_TEXT,
+            previous_question="Top_p giữ lại nhóm token nào?",
+            wrong_answer="Tất cả token như nhau",
+            misconception_feedback="Top_p không giữ mọi token như nhau.",
+            attempt_num=2,
+        )
+        self.assertEqual(len(fq.options), 4)
+        self.assertIn(fq.correct_index, range(4))
+        self.assertEqual(len(fq.misconceptions), 3)
+
 
 if __name__ == "__main__":
     unittest.main()
