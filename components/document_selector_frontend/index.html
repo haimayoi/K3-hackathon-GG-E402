@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #172033;
+        --muted: #657086;
+        --line: #e4e8ef;
+        --panel: #ffffff;
+        --soft: #f6f8fb;
+        --accent: #635bff;
+        --accent-dark: #5148e5;
+        --selection: #dcd9ff;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        background: transparent;
+        color: var(--ink);
+        font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      }
+
+      .viewer {
+        position: relative;
+        min-height: 640px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: var(--panel);
+        box-shadow: 0 12px 36px rgba(28, 38, 58, 0.07);
+      }
+
+      .toolbar {
+        display: flex;
+        min-height: 68px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 14px 18px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.96);
+      }
+
+      .toolbar-title {
+        display: flex;
+        min-width: 0;
+        align-items: center;
+        gap: 11px;
+      }
+
+      .file-icon {
+        display: grid;
+        width: 36px;
+        height: 36px;
+        flex: 0 0 36px;
+        place-items: center;
+        border-radius: 10px;
+        background: #eeecff;
+        color: var(--accent);
+      }
+
+      .title-wrap { min-width: 0; }
+
+      .eyebrow {
+        margin: 0 0 2px;
+        color: var(--muted);
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        overflow: hidden;
+        margin: 0;
+        font-size: 15px;
+        font-weight: 720;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .selection-hint {
+        flex: 0 0 auto;
+        padding: 7px 10px;
+        border-radius: 999px;
+        background: var(--soft);
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .document-scroll {
+        height: 570px;
+        overflow-y: auto;
+        scrollbar-color: #cfd5df transparent;
+        scrollbar-width: thin;
+      }
+
+      article {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 42px 46px 96px;
+        cursor: text;
+        font-family: inherit;
+        font-size: 18px;
+        line-height: 1.82;
+      }
+
+      article p { margin: 0 0 24px; }
+      article::selection, article *::selection { background: var(--selection); }
+      ::highlight(active-passage) {
+        background: #ccc8ff;
+        color: inherit;
+      }
+
+      .selection-overlay {
+        position: absolute;
+        z-index: 2;
+        border-radius: 3px;
+        background: #ccc8ff;
+        pointer-events: none;
+        mix-blend-mode: multiply;
+      }
+
+      .popover {
+        position: absolute;
+        z-index: 20;
+        display: none;
+        width: min(360px, calc(100% - 28px));
+        padding: 12px;
+        border: 1px solid #dfe3eb;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 18px 50px rgba(20, 29, 47, .18);
+      }
+
+      .popover.visible { display: block; animation: rise .15s ease-out; }
+
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      .popover-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        color: var(--ink);
+        font-size: 12px;
+        font-weight: 750;
+      }
+
+      .close {
+        display: grid;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        place-items: center;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 18px;
+      }
+
+      .close:hover { background: var(--soft); }
+
+      .input-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+      }
+
+      textarea {
+        width: 100%;
+        min-height: 42px;
+        max-height: 112px;
+        resize: none;
+        padding: 10px 11px;
+        border: 1px solid #d7dce6;
+        border-radius: 10px;
+        outline: none;
+        color: var(--ink);
+        font: 14px/1.4 "Segoe UI", Tahoma, Arial, sans-serif;
+      }
+
+      textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(99, 91, 255, .12);
+      }
+
+      .send {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        place-items: center;
+        border: 0;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+      }
+
+      .send:hover { background: var(--accent-dark); }
+      .send:disabled { cursor: not-allowed; opacity: .45; }
+
+      .help {
+        margin: 7px 2px 0;
+        color: var(--muted);
+        font-size: 11px;
+      }
+
+      @media (max-width: 640px) {
+        .selection-hint { display: none; }
+        article { padding: 30px 24px 80px; font-size: 17px; }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="viewer" id="viewer">
+      <header class="toolbar">
+        <div class="toolbar-title">
+          <span class="file-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          </span>
+          <div class="title-wrap">
+            <p class="eyebrow">Document Viewer</p>
+            <h1 id="document-title"></h1>
+          </div>
+        </div>
+        <span class="selection-hint">Bôi đen để đặt câu hỏi</span>
+      </header>
+
+      <div class="document-scroll" id="document-scroll">
+        <article id="document" tabindex="0"></article>
+      </div>
+
+      <form class="popover" id="popover">
+        <div class="popover-label">
+          <span>Hỏi về đoạn này</span>
+          <button class="close" id="close" type="button" aria-label="Đóng">×</button>
+        </div>
+        <div class="input-row">
+          <textarea id="question" rows="1" placeholder="Nhập câu hỏi của bạn…" aria-label="Câu hỏi"></textarea>
+          <button class="send" id="send" type="submit" disabled aria-label="Gửi câu hỏi">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+          </button>
+        </div>
+        <p class="help">Enter để gửi · Shift + Enter để xuống dòng</p>
+      </form>
+    </section>
+
+    <script>
+      const API_VERSION = 1;
+      const viewer = document.getElementById("viewer");
+      const scroller = document.getElementById("document-scroll");
+      const article = document.getElementById("document");
+      const title = document.getElementById("document-title");
+      const popover = document.getElementById("popover");
+      const question = document.getElementById("question");
+      const send = document.getElementById("send");
+      const close = document.getElementById("close");
+
+      let selectedText = "";
+      let anchorRect = null;
+      let selectedRange = null;
+      let lastPayload = "";
+
+      function post(type, payload = {}) {
+        window.parent.postMessage({ isStreamlitMessage: true, type, ...payload }, "*");
+      }
+
+      function setFrameHeight() {
+        post("streamlit:setFrameHeight", { height: 656 });
+      }
+
+      function hidePopover(clearSelection = false) {
+        popover.classList.remove("visible");
+        question.value = "";
+        send.disabled = true;
+        if (clearSelection) window.getSelection()?.removeAllRanges();
+      }
+
+      function clearOverlayHighlight() {
+        viewer.querySelectorAll(".selection-overlay").forEach((node) => node.remove());
+      }
+
+      function renderOverlayHighlight() {
+        clearOverlayHighlight();
+        if (!selectedRange) return;
+        const viewerRect = viewer.getBoundingClientRect();
+        selectedRange.getClientRects().forEach((rect) => {
+          if (!rect.width || !rect.height) return;
+          const overlay = document.createElement("span");
+          overlay.className = "selection-overlay";
+          overlay.style.left = `${rect.left - viewerRect.left}px`;
+          overlay.style.top = `${rect.top - viewerRect.top}px`;
+          overlay.style.width = `${rect.width}px`;
+          overlay.style.height = `${rect.height}px`;
+          viewer.appendChild(overlay);
+        });
+      }
+
+      function persistHighlight(range) {
+        selectedRange = range.cloneRange();
+        if (window.CSS?.highlights && window.Highlight) {
+          CSS.highlights.set("active-passage", new Highlight(selectedRange));
+          clearOverlayHighlight();
+        } else {
+          renderOverlayHighlight();
+        }
+      }
+
+      function positionPopover(rect) {
+        const width = Math.min(360, viewer.clientWidth - 28);
+        const preferredLeft = rect.left + rect.width / 2 - width / 2;
+        const left = Math.max(14, Math.min(preferredLeft, viewer.clientWidth - width - 14));
+        const below = rect.bottom + 10;
+        const estimatedHeight = 142;
+        const top = below + estimatedHeight < viewer.clientHeight
+          ? below
+          : Math.max(80, rect.top - estimatedHeight - 10);
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+      }
+
+      function captureSelection() {
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed || !selection.rangeCount) return;
+        const range = selection.getRangeAt(0);
+        if (!article.contains(range.commonAncestorContainer)) return;
+        const text = selection.toString().replace(/\s+/g, " ").trim();
+        if (!text) return;
+        selectedText = text;
+        persistHighlight(range);
+        anchorRect = range.getBoundingClientRect();
+        positionPopover(anchorRect);
+        popover.classList.add("visible");
+        setTimeout(() => question.focus(), 0);
+      }
+
+      function renderDocument(args) {
+        const payload = JSON.stringify([args.title, args.document]);
+        if (payload === lastPayload) return;
+        lastPayload = payload;
+        title.textContent = args.title || "Tài liệu học tập";
+        article.replaceChildren();
+        selectedRange = null;
+        window.CSS?.highlights?.delete("active-passage");
+        clearOverlayHighlight();
+        String(args.document || "")
+          .split(/\n\s*\n/)
+          .filter(Boolean)
+          .forEach((paragraph) => {
+            const node = document.createElement("p");
+            node.textContent = paragraph.trim();
+            article.appendChild(node);
+          });
+        hidePopover(true);
+      }
+
+      article.addEventListener("mouseup", () => setTimeout(captureSelection, 0));
+      article.addEventListener("keyup", () => setTimeout(captureSelection, 0));
+      scroller.addEventListener("scroll", () => {
+        if (popover.classList.contains("visible") && anchorRect) hidePopover(false);
+        if (!(window.CSS?.highlights && window.Highlight)) renderOverlayHighlight();
+      });
+
+      window.addEventListener("resize", () => {
+        if (!(window.CSS?.highlights && window.Highlight)) renderOverlayHighlight();
+      });
+
+      question.addEventListener("input", () => {
+        send.disabled = !question.value.trim();
+        question.style.height = "auto";
+        question.style.height = `${Math.min(question.scrollHeight, 112)}px`;
+      });
+
+      question.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          if (question.value.trim()) popover.requestSubmit();
+        }
+      });
+
+      close.addEventListener("click", () => hidePopover(true));
+      popover.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const text = question.value.trim();
+        if (!text || !selectedText) return;
+        post("streamlit:setComponentValue", {
+          value: {
+            event_id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            selected_text: selectedText,
+            question: text,
+          },
+        });
+        hidePopover(true);
+      });
+
+      window.addEventListener("message", (event) => {
+        if (event.data?.type !== "streamlit:render") return;
+        renderDocument(event.data.args || {});
+        setFrameHeight();
+      });
+
+      post("streamlit:componentReady", { apiVersion: API_VERSION });
+      setFrameHeight();
+    </script>
+  </body>
+</html>
