@@ -48,20 +48,34 @@ Loại: [ ] Tối ưu tính năng có sẵn  [x] Tính năng mới
 
 ## §3. Giải pháp tương tự đã nghiên cứu
 
-> **⚠️ CHƯA HOÀN THÀNH — cần team làm trước CP4.** Guide §2.2 yêu cầu mỗi thành viên dùng thử 1 sản phẩm
-> gần giống (15 phút), trả lời đúng 4 câu: ① flow giải job này thế nào? ② một điều đáng học (quan sát cụ
-> thể, không phải "giao diện đẹp")? ③ một điều đáng né? ④ mình khác gì ở lát cắt này? Tôi (Claude) không
-> có quyền tự trải nghiệm các sản phẩm này thay nhóm — đây là việc cần người thật dùng thử. Gợi ý phân
-> công 3 người còn lại trống lịch:
+> **Một phiên đã làm thật (30/07/2026):** tạo notebook thật
+> trên **Gemini Notebook** (trước đây là NotebookLM), dán
+> đúng một đoạn nguồn thật từ data pack (`d1-slide-hackathon.pdf` trang 29 — temperature/top_p, cùng nội
+> dung app của nhóm dùng làm case chuẩn), rồi hỏi 2 câu: một câu chuẩn có căn cứ ("top_p khác temperature
+> như thế nào?") và một câu ngoài phạm vi giống hệt case G11 của nhóm ("2 + 2 = ?").
 >
-> | Người | Sản phẩm gợi ý | Vì sao hợp |
-> |---|---|---|
-> | Mai Việt Anh / Bùi Thái Sơn / Đoàn Ngọc Linh *(willing user, có thể nhờ thử hộ)* | **NotebookLM** | Luôn cite nguồn cạnh câu trả lời — gần nhất với "trích dẫn trang N" của VLearn tutor |
-> | Trần Phú Nghĩa / Dương Văn Kiên *(willing user)* | **ChatGPT Study Mode** hoặc **Khanmigo** | Có bước hỏi ngược/kiểm tra hiểu trong lúc học — đối chiếu trực tiếp với lát cắt của nhóm |
-> | Bất kỳ ai rảnh | **Quizlet AI** | Sinh quiz tự động từ tài liệu — so sánh cách xử lý khi tài liệu không đủ để ra câu hỏi |
+> **NotebookLM (nay là Gemini Notebook)**
+> ① *Flow:* dán/upload nguồn → hỏi tự nhiên → trả lời kèm số trích dẫn `[1][2]` gắn ngay sau từng câu,
+>    không phải một khối "nguồn" tách rời ở cuối.
+> ② *Đáng học:* bấm vào số trích dẫn mở ra một popover trích đúng câu gốc trong nguồn + nút "View source"
+>    — user kiểm chứng được ngay tại chỗ, không cần rời khỏi luồng đọc để tự dò lại tài liệu.
+> ③ *Đáng né:* hỏi "2 + 2 = ?" khi nguồn chỉ có nội dung temperature/top_p → trả lời "Phép tính 2 + 2
+>    không xuất hiện trong các nguồn tài liệu hiện tại của bạn" — đúng nhưng **chỉ dừng ở "không có trong
+>    nguồn"**, không nói rõ đây là ngoài phạm vi khoá học hay tại sao lại hỏi vậy; các gợi ý câu hỏi tiếp
+>    theo (follow-up chips) sau đó lại đổi hẳn sang tiếng Anh dù cả nguồn và câu hỏi đều tiếng Việt — thiếu
+>    nhất quán ngôn ngữ, dễ gây khó chịu với học viên không quen đọc tiếng Anh.
+> ④ *Mình khác gì:* Gemini Notebook chỉ có một loại từ chối ("không có trong nguồn"), gộp chung mọi lý do
+>    ngoài phạm vi vào một câu. Sản phẩm của nhóm tách rõ theo 4 lớp (`ReasonCode` trong
+>    `codebase/components/learning_agent.py`: `OUTSIDE_COURSE_SCOPE` khác `SOURCE_NOT_FOUND` khác
+>    `INSUFFICIENT_CONTEXT`) — nên với đúng case "2+2=?", app của nhóm trả lời cụ thể hơn: từ chối *vì đây
+>    không phải kiến thức của khoá học* (không chỉ vì "không có trong đoạn bạn chọn"), và sinh đúng
+>    một quiz 4 lựa chọn có chấm điểm ngay — Gemini Notebook không có bước kiểm tra hiểu nào.
 
-- [Sản phẩm 1]: flow / đáng học / đáng né / mình khác gì — *(điền sau khi thử)*
-- [Sản phẩm 2]: ... — *(điền sau khi thử)*
+| Người | Sản phẩm | Trạng thái |
+|---|---|---|
+| Lê Hà Hải Vân | Gemini Notebook (NotebookLM) | ✅ Đã thử |
+| Trần Phú Nghĩa / Dương Văn Kiên *(willing user)* | ChatGPT Study Mode hoặc Khanmigo — cần tài khoản trả phí/trường | ⚠️ TODO — cần người thật có tài khoản |
+| Bất kỳ ai rảnh | Quizlet AI | ⚠️ TODO — cần người thật |
 
 ## §4. Thiết kế
 
@@ -75,11 +89,12 @@ Loại: [ ] Tối ưu tính năng có sẵn  [x] Tính năng mới
   2. Không thay thế quiz cuối buổi chính thức.
   3. Không chấm điểm học viên.
   4. Không tự động báo cáo lên giảng viên ở bản đầu.
-- **Mức prototype:** [x] Working hackathon prototype — `app.py` đọc trực tiếp 2 PDF khoá học, xác minh
-  trang/đoạn bằng lookup xác định, gọi OpenAI để sinh một artifact có cấu trúc (tutor answer + đúng một
-  quiz 4 lựa chọn + một retry dễ hơn), kiểm tra schema/grounding trước khi hiển thị và chấm đáp án bằng
-  `correct_index` xác định. `components/mock_data.py` và `codebase/` chỉ là artifact CP2 lịch sử, không
-  được import bởi app chuẩn; fixed confidence 0.87 và static retry không còn trong flow chuẩn.
+- **Mức prototype:** [x] Working hackathon prototype — `codebase/app.py` đọc trực tiếp 2 PDF khoá học,
+  xác minh trang/đoạn bằng lookup xác định, gọi OpenAI để sinh một artifact có cấu trúc (tutor answer +
+  đúng một quiz 4 lựa chọn + một retry dễ hơn), kiểm tra schema/grounding trước khi hiển thị và chấm đáp
+  án bằng `correct_index` xác định. Toàn bộ code thật nằm trong `codebase/` đúng cấu trúc nộp bài.
+  `codebase/components/mock_data.py` là artifact CP2 lịch sử, không được import bởi app chuẩn; fixed
+  confidence 0.87 và static retry không còn trong flow chuẩn.
 - **Bounded state machine:** `RECEIVED_CONTEXT → ELIGIBILITY_CHECK → SOURCE_VALIDATION → QUIZ_GENERATION
   → QUIZ_VALIDATION → PRESENTED → ANSWER_EVALUATION → FEEDBACK → RETRY hoặc COMPLETED`; nhánh cuối
   an toàn: `ABSTAINED`, `ERROR_FALLBACK`. Không có vòng ReAct hoặc tool loop mở.- **Automation: [x] Conditional** — tự động chèn quiz sau các lượt "dạy" thật sự; bỏ qua/từ chối khi
@@ -92,8 +107,8 @@ Loại: [ ] Tối ưu tính năng có sẵn  [x] Tính năng mới
 
 | Nguyên tắc | Áp cụ thể vào đâu trong prototype |
 |---|---|
-| **G10 — Thu hẹp phạm vi khi nghi ngờ** *(bắt buộc)* | `components/quiz_panel.py`, nhánh `quiz_status == "insufficient"`: hiện `st.info` giải thích lý do thay vì ép ra một câu quiz không chắc. Instruction trong `ai_client.py` bắt AI trả `status="insufficient"` khi input không đủ căn cứ — kể cả khi input "có đáp án đúng-sai rõ ràng" nhưng ngoài phạm vi khoá học (xem `eval/run-01-20260730.md`, case G11). |
-| **G8 — Gạt bỏ dễ dàng** | Không có gì trong `chatbot_panel.py` chặn user gửi câu hỏi mới trong lúc một quiz trước đó chưa trả lời — user bỏ qua quiz, đọc tiếp, hỏi tiếp bất cứ lúc nào. |
+| **G10 — Thu hẹp phạm vi khi nghi ngờ** *(bắt buộc)* | `codebase/components/quiz_panel.py`, nhánh `quiz_status == "insufficient"`: hiện `st.info` giải thích lý do thay vì ép ra một câu quiz không chắc. Instruction trong `codebase/components/ai_client.py` bắt AI trả `status="insufficient"` khi input không đủ căn cứ — kể cả khi input "có đáp án đúng-sai rõ ràng" nhưng ngoài phạm vi khoá học (xem `eval/run-01-20260730.md`, case G11). |
+| **G8 — Gạt bỏ dễ dàng** | Không có gì trong `codebase/components/chatbot_panel.py` chặn user gửi câu hỏi mới trong lúc một quiz trước đó chưa trả lời — user bỏ qua quiz, đọc tiếp, hỏi tiếp bất cứ lúc nào. |
 | **G9 — Sửa dễ dàng** | `quiz_panel._render_retry_quiz`: ngay sau câu trả lời sai, một câu hỏi thử-lại đơn giản hơn xuất hiện liền trong cùng luồng chat — không cần rời màn hình hay bắt đầu lại. |
 | **G11 — Giải thích vì sao** | `quiz_panel.render_quiz_messages`, nhánh trả lời sai: tra đúng `misconceptions[quiz_answer_index]` — giải thích gắn với chính lựa chọn học viên vừa chọn, không phải thông báo "sai" chung chung. |
 | **G2 — Làm rõ nó làm tốt đến đâu** | `chatbot_panel._render_empty_thread`: câu chào đầu tiên nói rõ phạm vi ("Bôi đen một đoạn... câu trả lời và bài kiểm tra ngắn sẽ xuất hiện tại đây"). Khi AI từ chối ra quiz, lý do luôn hiển thị (`quiz_reason`) thay vì im lặng bỏ qua. |
@@ -190,7 +205,7 @@ Loại: [ ] Tối ưu tính năng có sẵn  [x] Tính năng mới
 | Thời điểm | Đổi gì | Vì sao (trỏ về feedback/case nào) |
 |---|---|---|
 | CP2 | Dựng UI tương tác Streamlit, flow bấm trọn được với data giả (commit `eba181c`) | Đúng yêu cầu CP2: flow chính bấm hết được, chưa cần AI |
-| CP3 | Nối lời gọi AI thật (Gemini ban đầu, sau đổi OpenAI `gpt-4o-mini` theo yêu cầu nhóm) vào quyết định trung tâm — sinh quiz kiểm tra hiểu (`components/ai_client.py`) | Đúng yêu cầu CP3: ≥1 lời gọi AI thật ở quyết định trung tâm, không hardcode |
+| CP3 | Nối lời gọi AI thật (Gemini ban đầu, sau đổi OpenAI `gpt-4o-mini` theo yêu cầu nhóm) vào quyết định trung tâm — sinh quiz kiểm tra hiểu (`codebase/components/ai_client.py`) | Đúng yêu cầu CP3: ≥1 lời gọi AI thật ở quyết định trung tâm, không hardcode |
 | CP3 | Xây golden set v1 (28 case) từ chatlog thật | Chuẩn bị đo lượt đầu |
 | CP3 | Rà lại golden set v1 → phát hiện 15/28 case dùng nội dung (Agentic Fit, Tool Interaction, ReAct...) không có thật trong 2 file `data/vlearn-pack/slides/` được cấp — rebuild thành v2, grounded 100% vào đúng 2 file | Nguyên tắc R1/R4: bằng chứng và golden set phải kiểm lại được — case không đối chiếu được với data đã cấp thì không tính |
 | CP3 | Lượt chạy 1-2: 27/28 (96%), case G11 ("2+2=?") liên tục fail — AI tự ra quiz cho phép tính số học ngoài phạm vi khoá học | Phát hiện qua chạy golden set v2, lặp lại 2/2 lượt → xác nhận lỗi hệ thống, không phải ngẫu nhiên |

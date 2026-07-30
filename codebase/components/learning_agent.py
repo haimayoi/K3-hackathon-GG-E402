@@ -26,7 +26,7 @@ from components.course_materials import CoursePage, normalize_text, relevant_con
 
 load_dotenv()
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 TRACE_PATH = ROOT / "eval" / "runtime_traces.jsonl"
 ARTIFACT_VERSION = "vlearn-check-1.0"
 PROMPT_VERSION = "learning-check-2026-07-30-v4"

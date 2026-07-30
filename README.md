@@ -32,15 +32,15 @@ PDF page selection
 
 Key files:
 
-- `app.py` — canonical Streamlit entry point.
-- `components/course_materials.py` — deterministic two-PDF/page lookup; no embeddings or vector database.
-- `components/learning_agent.py` — bounded state machine, reason codes, model adapter, validation, attempt limits, trace metadata, and scoring.
-- `components/chatbot_panel.py`, `components/quiz_panel.py`, `components/document_panel.py` — user experience.
+- `codebase/app.py` — canonical Streamlit entry point.
+- `codebase/components/course_materials.py` — deterministic two-PDF/page lookup; no embeddings or vector database.
+- `codebase/components/learning_agent.py` — bounded state machine, reason codes, model adapter, validation, attempt limits, trace metadata, and scoring.
+- `codebase/components/chatbot_panel.py`, `codebase/components/quiz_panel.py`, `codebase/components/document_panel.py` — user experience.
 - `tests/test_learning_agent.py` — offline behavior and guardrail suite.
 - `eval/golden_set.jsonl` — preserved 28-case locked evaluation set.
 - `eval/run_golden_set.py` — real-provider evaluation with immutable run IDs.
 
-`components/ai_client.py` is a privacy-hardened compatibility adapter for the preserved golden-set contract. `codebase/` and `components/mock_data.py` are historical CP2 artifacts; they are not imported by the canonical app.
+`codebase/components/ai_client.py` is a privacy-hardened compatibility adapter for the preserved golden-set contract. `codebase/components/mock_data.py` is a historical CP2 artifact, not imported by the canonical app. The prototype now lives under `codebase/` per the submission structure (moved from repo root); `tests/` and `eval/` add `codebase/` to `sys.path` to import it.
 
 ## Setup
 
@@ -49,7 +49,7 @@ Python 3.11 is recommended.
 ```powershell
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+python -m pip install -r codebase/requirements.txt
 Copy-Item .env.example .env
 ```
 
@@ -64,8 +64,10 @@ OPENAI_MODEL=gpt-4o-mini
 
 ## Launch
 
+Run from the repo root (not from inside `codebase/`) so `data/vlearn-pack/`, `.env`, and `.streamlit/config.toml` resolve correctly:
+
 ```powershell
-.\.venv\Scripts\python.exe -m streamlit run app.py
+.\.venv\Scripts\python.exe -m streamlit run codebase/app.py
 ```
 
 Demo flow:
@@ -81,7 +83,7 @@ Demo flow:
 
 ```powershell
 # Compile
-.\.venv\Scripts\python.exe -m compileall -q app.py components eval tests
+.\.venv\Scripts\python.exe -m compileall -q codebase eval tests
 
 # Offline tests (no API key or network)
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
@@ -100,7 +102,7 @@ The locked quality bar remains unchanged in `spec.md`: at least 80% status match
 
 ## Real versus historical mock behavior
 
-Canonical `app.py`:
+Canonical `codebase/app.py`:
 
 - Real OpenAI structured generation: tutor answer, primary quiz, misconceptions, and easier retry.
 - Real deterministic PDF/page lookup and selection verification.
@@ -109,7 +111,7 @@ Canonical `app.py`:
 
 Historical only:
 
-- `components/mock_data.py`, `STREAMLIT_LEARNING_CHATBOT_FLOW.md`, and `codebase/` preserve the CP2 mock prototype and original brief for audit history. Their fixed answer/confidence/retry values are not used by the canonical app.
+- `codebase/components/mock_data.py` and `STREAMLIT_LEARNING_CHATBOT_FLOW.md` preserve the CP2 mock prototype and original brief for audit history (fixed answer/confidence/retry values not used by the canonical app). The earlier CP2-era `codebase/app.py` (a different, fully-mocked flow) is preserved in git history, not in the working tree — see `codebase/README.md` for the note explaining that history.
 
 ## Privacy and safety
 
@@ -140,4 +142,6 @@ Group and zone: **HUMAN ACTION REQUIRED — [XX] / [X]**.
 
 ## Restricted data warning
 
-The supplied VLearn data pack is currently tracked in Git even though its own documentation says it must not be committed to a submission repository or shared outside the course. It includes 12 tracked files: two PDFs, six full transcripts, the anonymized chatlog CSV, and three data-documentation files. Do not make this repository public. Removing or rewriting tracked data requires explicit approval and is intentionally not performed here.
+The two slide PDFs, six full transcripts, and the anonymized chatlog CSV have been untracked from Git (`git rm --cached` + `.gitignore`) because the data pack's own documentation forbids committing raw files to a submission repository. They remain on disk locally so the app keeps working; a fresh clone of this repo will need its own copy of `data/vlearn-pack/` from the organizers to run the app or regenerate the golden set. The two short data-documentation files (`chatlog/DATA_DICTIONARY.md`, package `README.md` files) stay tracked since they describe structure, not raw content.
+
+**Past commits still contain the raw files in Git history** (this untrack only stops *future* commits). Rewriting history to remove them is a separate, more invasive step — do not do this without team agreement, since it force-changes shared history. Do not make this repository public until that is resolved.
