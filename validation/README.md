@@ -4,7 +4,7 @@ No human feedback is recorded yet. This folder intentionally contains a blank, h
 
 ## Required protocol
 
-Test the canonical `app.py` with at least five people outside the team, including at least two willing users already named in `canvas-cp1.md`. Ask each person to complete the same bounded task plus one failure case. Obtain consent before recording a name or quote; use a participant code if course policy requires it.
+Test the canonical `codebase/app.py` with at least five people outside the team, including at least two willing users already named in `canvas-cp1.md`. Ask each person to complete the same bounded task plus one failure case. Obtain consent before recording a name or quote; use a participant code if course policy requires it.
 
 Ask exactly:
 

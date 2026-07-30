@@ -8,7 +8,7 @@ from functools import lru_cache
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SLIDES_DIR = ROOT / "data" / "vlearn-pack" / "slides"
 
 

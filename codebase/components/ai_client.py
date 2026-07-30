@@ -23,7 +23,7 @@ from pydantic import BaseModel, Field
 load_dotenv()
 
 _MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
-_TRACE_PATH = Path(__file__).resolve().parents[1] / "eval" / "live_call_traces.jsonl"
+_TRACE_PATH = Path(__file__).resolve().parents[2] / "eval" / "live_call_traces.jsonl"
 _PROMPT_VERSION = "golden-set-quiz-2026-07-30-v2"
 _MAX_ATTEMPTS = 2
 

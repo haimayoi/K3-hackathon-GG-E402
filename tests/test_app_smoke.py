@@ -6,7 +6,7 @@ from streamlit.testing.v1 import AppTest
 
 class CanonicalAppSmokeTest(unittest.TestCase):
     def test_app_starts_without_exception(self):
-        app = AppTest.from_file("app.py", default_timeout=20)
+        app = AppTest.from_file("codebase/app.py", default_timeout=20)
         app.run()
         self.assertEqual(len(app.exception), 0)
         self.assertEqual(len(app.selectbox), 2)
@@ -15,7 +15,7 @@ class CanonicalAppSmokeTest(unittest.TestCase):
 
     def test_slide_viewer_has_scroll_navigation_contract(self):
         frontend = Path(
-            "components/document_selector_frontend/index.html"
+            "codebase/components/document_selector_frontend/index.html"
         ).read_text(encoding="utf-8")
         self.assertIn('addEventListener("wheel"', frontend)
         self.assertIn("page: currentPage", frontend)
@@ -26,6 +26,7 @@ class CanonicalAppSmokeTest(unittest.TestCase):
         self.assertIn('id="text-layer"', frontend)
         self.assertIn("new pdfjsLib.TextLayer", frontend)
         self.assertIn("pdfjsLib.getDocument", frontend)
+        self.assertIn('question.value = `Giải thích //${text}//`;', frontend)
         self.assertNotIn("base64ToBlobUrl", frontend)
         self.assertNotIn("slide-image", frontend)
         self.assertIn("color: rgba(23, 32, 51, .92);", frontend)

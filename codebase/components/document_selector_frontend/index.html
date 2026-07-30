@@ -456,6 +456,8 @@
         if (!text) return;
         selectedText = text;
         persistHighlight(range);
+        question.value = `Giải thích //${text}//`;
+        question.dispatchEvent(new Event("input"));
         anchorRect = range.getBoundingClientRect();
         positionPopover(anchorRect);
         popover.classList.add("visible");

@@ -28,7 +28,7 @@ The locked status threshold (≥80%) is met. The locked zero-invention condition
 .\.venv\Scripts\python.exe eval\run_golden_set.py
 ```
 
-The live runner uses `run-live-<UTC>-<random ID>` filenames, so repeated runs never overwrite evidence. It automates status and schema only. `components/ai_client.py` logs privacy-minimized call metadata to ignored `eval/live_call_traces.jsonl`; it does not log full learner text, secrets, raw provider errors, or chain-of-thought.
+The live runner uses `run-live-<UTC>-<random ID>` filenames, so repeated runs never overwrite evidence. It automates status and schema only. `codebase/components/ai_client.py` logs privacy-minimized call metadata to ignored `eval/live_call_traces.jsonl`; it does not log full learner text, secrets, raw provider errors, or chain-of-thought.
 
 ## Human review procedure
 

@@ -52,6 +52,19 @@ Loại: [ ] Tối ưu tính năng có sẵn  [x] Tính năng mới
 > đáp ứng đúng Guide §2.2, mỗi thành viên vẫn cần dùng thử sản phẩm được phân công trong **15 phút** và bổ
 > sung ít nhất **1 quan sát trực tiếp hoặc ảnh chụp màn hình**. Không ghi “đã dùng thử” nếu chưa thực hiện.
 
+### Quan sát dùng thử trực tiếp — Lê Hà Hải Vân
+
+- **Sản phẩm:** Gemini Notebook (trước đây là NotebookLM).
+- **Nguồn và case:** dùng đoạn thật ở trang 29 của `d1-slide-hackathon.pdf` về `temperature`/`top_p`,
+  hỏi một câu có căn cứ và câu ngoài phạm vi `2 + 2 = ?` giống case G11.
+- **Flow:** dán/upload nguồn → hỏi tự nhiên → nhận câu trả lời có số trích dẫn gắn sau từng ý; bấm trích
+  dẫn mở đúng câu nguồn và có nút xem nguồn.
+- **Điều đáng học:** người dùng kiểm chứng tại chỗ mà không cần rời luồng đọc.
+- **Điều đáng né:** câu ngoài nguồn chỉ được báo là không xuất hiện trong tài liệu, chưa phân biệt rõ
+  `OUTSIDE_COURSE_SCOPE`, `SOURCE_NOT_FOUND` và `INSUFFICIENT_CONTEXT`; gợi ý tiếp theo còn đổi sang
+  tiếng Anh dù nguồn và câu hỏi đều bằng tiếng Việt.
+- **Khác biệt của nhóm:** hệ thống phân loại rõ lý do từ chối và chỉ sinh quiz khi có đủ căn cứ.
+
 | Người xác nhận | Sản phẩm | ① Flow giải job | ② Một điều đáng học | ③ Một điều đáng né | ④ Nhóm mình khác gì ở lát cắt này? |
 |---|---|---|---|---|---|
 | **Hà Duyên Hùng** | **NotebookLM** | Người học thêm PDF/slide làm nguồn, hỏi về nội dung; câu trả lời có trích dẫn để mở lại đúng vị trí nguồn. Người học có thể tạo quiz/flashcard từ nguồn, làm bài, xem kết quả rồi review hoặc làm lại. | Cho phép kiểm chứng ngay bằng citation gắn với nguồn và chọn nguồn nào được dùng. Đây là mẫu tốt cho yêu cầu “quiz/câu trả lời phải truy được về đúng trang tài liệu”. | Quiz là một artifact riêng được tạo từ tập nguồn, nên chưa chắc xuất hiện đúng ngay sau lần giải thích một đoạn cụ thể. Khi nguồn quá ngắn, citation có thể chỉ trỏ về toàn tài liệu thay vì một đoạn chính xác. | VLearn kích hoạt **ngay tại đoạn bôi đen + câu hỏi vừa hỏi**, chỉ sinh **một quiz 4 lựa chọn** về đúng khái niệm đó; kiểm tra trang/đoạn trước khi sinh và abstain nếu không đủ căn cứ. |
@@ -89,15 +102,17 @@ OpenAI Help Center — “Using Study Mode in ChatGPT”; Khan Academy — hư�
   2. Không thay thế quiz cuối buổi chính thức.
   3. Không chấm điểm học viên.
   4. Không tự động báo cáo lên giảng viên ở bản đầu.
-- **Mức prototype:** [x] Working hackathon prototype — `app.py` đọc trực tiếp 2 PDF khoá học, xác minh
+- **Mức prototype:** [x] Working hackathon prototype — `codebase/app.py` đọc trực tiếp 2 PDF khoá học, xác minh
   trang/đoạn bằng lookup xác định, gọi OpenAI để sinh một artifact có cấu trúc (tutor answer + đúng một
   quiz 4 lựa chọn + một retry dễ hơn), kiểm tra schema/grounding trước khi hiển thị và chấm đáp án bằng
-  `correct_index` xác định. `components/mock_data.py` và `codebase/` chỉ là artifact CP2 lịch sử, không
-  được import bởi app chuẩn; fixed confidence 0.87 và static retry không còn trong flow chuẩn.
+  `correct_index` xác định. Toàn bộ code thật nằm trong `codebase/`; `codebase/components/mock_data.py`
+  chỉ là artifact CP2 lịch sử và không được import bởi app chuẩn.
 - **Bounded state machine:** `RECEIVED_CONTEXT → ELIGIBILITY_CHECK → SOURCE_VALIDATION → QUIZ_GENERATION
   → QUIZ_VALIDATION → PRESENTED → ANSWER_EVALUATION → FEEDBACK → RETRY hoặc COMPLETED`; nhánh cuối
-  an toàn: `ABSTAINED`, `ERROR_FALLBACK`. Không có vòng ReAct hoặc tool loop mở.- **Automation: [x] Conditional** — tự động chèn quiz sau các lượt "dạy" thật sự; bỏ qua/từ chối khi
-  input không phải nội dung học thuật hoặc không đủ căn cứ (status="insufficient" trong `ai_client.py`).
+  an toàn: `ABSTAINED`, `ERROR_FALLBACK`. Không có vòng ReAct hoặc tool loop mở.
+- **Automation: [x] Conditional** — tự động chèn quiz sau các lượt "dạy" thật sự; bỏ qua/từ chối khi
+  input không phải nội dung học thuật hoặc không đủ căn cứ (status="insufficient" trong
+  `codebase/components/ai_client.py`).
   **Lý do (cost-of-error):** quiz sai thời điểm gây phiền nhưng sửa rẻ — học viên bỏ qua được (G8). Ngược
   lại, im lặng không bao giờ kiểm tra thì hiểu sai âm thầm tích luỹ tới lúc thi mới lộ ra — cost đắt hơn
   nhiều (điểm số, niềm tin) — đúng bằng chứng ở §1 (98,4% lượt dạy không có bước xác nhận nào).
@@ -106,8 +121,8 @@ OpenAI Help Center — “Using Study Mode in ChatGPT”; Khan Academy — hư�
 
 | Nguyên tắc | Áp cụ thể vào đâu trong prototype |
 |---|---|
-| **G10 — Thu hẹp phạm vi khi nghi ngờ** *(bắt buộc)* | `components/quiz_panel.py`, nhánh `quiz_status == "insufficient"`: hiện `st.info` giải thích lý do thay vì ép ra một câu quiz không chắc. Instruction trong `ai_client.py` bắt AI trả `status="insufficient"` khi input không đủ căn cứ — kể cả khi input "có đáp án đúng-sai rõ ràng" nhưng ngoài phạm vi khoá học (xem `eval/run-01-20260730.md`, case G11). |
-| **G8 — Gạt bỏ dễ dàng** | Không có gì trong `chatbot_panel.py` chặn user gửi câu hỏi mới trong lúc một quiz trước đó chưa trả lời — user bỏ qua quiz, đọc tiếp, hỏi tiếp bất cứ lúc nào. |
+| **G10 — Thu hẹp phạm vi khi nghi ngờ** *(bắt buộc)* | `codebase/components/quiz_panel.py`, nhánh `quiz_status == "insufficient"`: hiện `st.info` giải thích lý do thay vì ép ra một câu quiz không chắc. Instruction trong `codebase/components/ai_client.py` bắt AI trả `status="insufficient"` khi input không đủ căn cứ — kể cả khi input "có đáp án đúng-sai rõ ràng" nhưng ngoài phạm vi khoá học (xem `eval/run-01-20260730.md`, case G11). |
+| **G8 — Gạt bỏ dễ dàng** | Không có gì trong `codebase/components/chatbot_panel.py` chặn user gửi câu hỏi mới trong lúc một quiz trước đó chưa trả lời — user bỏ qua quiz, đọc tiếp, hỏi tiếp bất cứ lúc nào. |
 | **G9 — Sửa dễ dàng** | `quiz_panel._render_retry_quiz`: ngay sau câu trả lời sai, một câu hỏi thử-lại đơn giản hơn xuất hiện liền trong cùng luồng chat — không cần rời màn hình hay bắt đầu lại. |
 | **G11 — Giải thích vì sao** | `quiz_panel.render_quiz_messages`, nhánh trả lời sai: tra đúng `misconceptions[quiz_answer_index]` — giải thích gắn với chính lựa chọn học viên vừa chọn, không phải thông báo "sai" chung chung. |
 | **G2 — Làm rõ nó làm tốt đến đâu** | `chatbot_panel._render_empty_thread`: câu chào đầu tiên nói rõ phạm vi ("Bôi đen một đoạn... câu trả lời và bài kiểm tra ngắn sẽ xuất hiện tại đây"). Khi AI từ chối ra quiz, lý do luôn hiển thị (`quiz_reason`) thay vì im lặng bỏ qua. |
@@ -204,7 +219,7 @@ OpenAI Help Center — “Using Study Mode in ChatGPT”; Khan Academy — hư�
 | Thời điểm | Đổi gì | Vì sao (trỏ về feedback/case nào) |
 |---|---|---|
 | CP2 | Dựng UI tương tác Streamlit, flow bấm trọn được với data giả (commit `eba181c`) | Đúng yêu cầu CP2: flow chính bấm hết được, chưa cần AI |
-| CP3 | Nối lời gọi AI thật (Gemini ban đầu, sau đổi OpenAI `gpt-4o-mini` theo yêu cầu nhóm) vào quyết định trung tâm — sinh quiz kiểm tra hiểu (`components/ai_client.py`) | Đúng yêu cầu CP3: ≥1 lời gọi AI thật ở quyết định trung tâm, không hardcode |
+| CP3 | Nối lời gọi AI thật (Gemini ban đầu, sau đổi OpenAI `gpt-4o-mini` theo yêu cầu nhóm) vào quyết định trung tâm — sinh quiz kiểm tra hiểu (`codebase/components/ai_client.py`) | Đúng yêu cầu CP3: ≥1 lời gọi AI thật ở quyết định trung tâm, không hardcode |
 | CP3 | Xây golden set v1 (28 case) từ chatlog thật | Chuẩn bị đo lượt đầu |
 | CP3 | Rà lại golden set v1 → phát hiện 15/28 case dùng nội dung (Agentic Fit, Tool Interaction, ReAct...) không có thật trong 2 file `data/vlearn-pack/slides/` được cấp — rebuild thành v2, grounded 100% vào đúng 2 file | Nguyên tắc R1/R4: bằng chứng và golden set phải kiểm lại được — case không đối chiếu được với data đã cấp thì không tính |
 | CP3 | Lượt chạy 1-2: 27/28 (96%), case G11 ("2+2=?") liên tục fail — AI tự ra quiz cho phép tính số học ngoài phạm vi khoá học | Phát hiện qua chạy golden set v2, lặp lại 2/2 lượt → xác nhận lỗi hệ thống, không phải ngẫu nhiên |
