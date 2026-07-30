@@ -16,40 +16,10 @@ MOCK_CONFIDENCE = 0.87
 
 MOCK_EVIDENCE = """“…mô hình học quá chi tiết dữ liệu huấn luyện, bao gồm cả nhiễu và những đặc điểm ngẫu nhiên…”"""
 
-QUIZ_QUESTION = (
-    "Tại sao mô hình bị overfitting thường hoạt động kém trên dữ liệu mới?"
-)
-
-QUIZ_OPTIONS = [
-    "A. Vì mô hình không học được dữ liệu huấn luyện.",
-    "B. Vì mô hình học cả nhiễu và các chi tiết không mang tính tổng quát.",
-    "C. Vì dữ liệu huấn luyện luôn nhỏ hơn dữ liệu kiểm thử.",
-    "D. Vì mô hình sử dụng quá ít tham số.",
-]
-
-CORRECT_QUIZ_OPTION = QUIZ_OPTIONS[1]
-
-CORRECT_EXPLANATION = (
-    "Chính xác. Overfitting làm mô hình ghi nhớ cả nhiễu và những chi tiết riêng "
-    "của tập huấn luyện, nên mô hình khó tổng quát hóa sang dữ liệu mới."
-)
-
-MISCONCEPTION_FEEDBACK = {
-    QUIZ_OPTIONS[0]: (
-        "Bạn đang nhầm overfitting với underfitting. Mô hình bị overfitting thường "
-        "học rất tốt dữ liệu huấn luyện. Vấn đề là nó ghi nhớ cả nhiễu và các chi "
-        "tiết riêng của tập huấn luyện nên không tổng quát tốt sang dữ liệu mới."
-    ),
-    QUIZ_OPTIONS[2]: (
-        "Kích thước tương đối giữa tập huấn luyện và tập kiểm thử không phải nguyên "
-        "nhân trực tiếp gây overfitting. Nguyên nhân chính là mô hình học các chi "
-        "tiết không mang tính tổng quát trong dữ liệu huấn luyện."
-    ),
-    QUIZ_OPTIONS[3]: (
-        "Quá ít tham số thường khiến mô hình dễ underfitting hơn. Overfitting thường "
-        "liên quan đến mô hình quá phức tạp so với lượng và chất lượng dữ liệu."
-    ),
-}
+# The comprehension-check quiz itself (question/options/misconceptions) is no
+# longer static — it's generated per-turn by a real Gemini call in
+# components/ai_client.py (see chatbot_panel._consume_submission). Only the
+# retry follow-up below stays mock, out of CP3's scope.
 
 RETRY_QUESTION = (
     "Một mô hình đạt 99% độ chính xác trên tập huấn luyện nhưng chỉ đạt 65% trên "

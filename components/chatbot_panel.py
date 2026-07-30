@@ -2,6 +2,7 @@
 
 import streamlit as st
 
+from components.ai_client import generate_comprehension_quiz
 from components.mock_data import MOCK_ANSWER, MOCK_CONFIDENCE, MOCK_EVIDENCE
 from components.quiz_panel import render_quiz_messages
 
@@ -10,7 +11,12 @@ def _consume_submission(
     submission: dict[str, object] | None,
     confidence_threshold: float,
 ) -> None:
-    """Convert a new document-popover event into a mock conversation turn."""
+    """Convert a new document-popover event into a conversation turn.
+
+    The tutor's own answer/evidence/confidence stay mock (out of CP3 scope).
+    The comprehension quiz is the central AI decision: a real Gemini call,
+    made here so it runs once per new submission, not on every rerun.
+    """
     if not submission:
         return
 
@@ -23,21 +29,32 @@ def _consume_submission(
         return
 
     st.session_state.last_submission_id = event_id
-    st.session_state.chat_turns.append(
-        {
-            "id": event_id,
-            "selected_text": selected_text,
-            "question": question,
-            "answer": MOCK_ANSWER,
-            "evidence": MOCK_EVIDENCE,
-            "confidence": MOCK_CONFIDENCE,
-            "quiz_visible": MOCK_CONFIDENCE >= confidence_threshold,
-            "quiz_answer": None,
-            "quiz_is_correct": False,
-            "retry_answer": None,
-            "retry_is_correct": False,
-        }
-    )
+
+    turn: dict[str, object] = {
+        "id": event_id,
+        "selected_text": selected_text,
+        "question": question,
+        "answer": MOCK_ANSWER,
+        "evidence": MOCK_EVIDENCE,
+        "confidence": MOCK_CONFIDENCE,
+        "quiz_visible": MOCK_CONFIDENCE >= confidence_threshold,
+        "quiz_status": None,
+        "quiz_reason": None,
+        "quiz_data": None,
+        "quiz_answer_index": None,
+        "quiz_is_correct": False,
+        "retry_answer": None,
+        "retry_is_correct": False,
+    }
+
+    if turn["quiz_visible"]:
+        with st.spinner("Đang soạn câu kiểm tra hiểu..."):
+            result = generate_comprehension_quiz(selected_text, MOCK_ANSWER)
+        turn["quiz_status"] = result.get("status")
+        turn["quiz_reason"] = result.get("reason")
+        turn["quiz_data"] = result
+
+    st.session_state.chat_turns.append(turn)
 
 
 def _render_empty_thread() -> None:
