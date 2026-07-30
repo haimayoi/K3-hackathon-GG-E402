@@ -2,10 +2,8 @@
 
 from __future__ import annotations
 
-import os
 import streamlit as st
 
-from components.mock_data import DEFAULT_TEST_CASE_ID
 from components.quiz_panel import render_quiz_messages
 from services.ai_client import AIConfig
 from services.learning_engine import LearningTurn, run_learning_turn
@@ -17,13 +15,12 @@ def _to_ui_turn(
     selected_text: str,
     page_number: int,
     question: str,
-    test_case_id: str,
 ) -> dict[str, object]:
     response = result.response
     turn: dict[str, object] = {
         'id': event_id, 'selected_text': selected_text,
         'page_number': page_number, 'question': question,
-        'test_case_title': test_case_id, 'status': response.status,
+        'status': response.status,
         'answer': response.answer, 'reason': response.reason,
         'citations': [citation.__dict__ for citation in response.citations],
         'provider': result.provider, 'model': result.model,
@@ -53,7 +50,6 @@ def _to_ui_turn(
 
 def _consume_submission(
     submission: dict[str, object] | None,
-    test_case_id: str,
     ai_config: AIConfig | None,
 ) -> None:
     if not submission:
@@ -76,9 +72,7 @@ def _consume_submission(
             config=ai_config,
         )
     st.session_state.chat_turns.append(
-        _to_ui_turn(
-            result, event_id, selected_text, page_number, question, test_case_id
-        )
+        _to_ui_turn(result, event_id, selected_text, page_number, question)
     )
 
 
@@ -99,8 +93,7 @@ def _retry_turn(turn: dict[str, object], ai_config: AIConfig | None) -> None:
         )
     replacement = _to_ui_turn(
         result, str(turn['id']), str(turn['selected_text']),
-        int(turn['page_number']), str(turn['question']),
-        str(turn['test_case_title'])
+        int(turn['page_number']), str(turn['question'])
     )
     turn.clear()
     turn.update(replacement)
@@ -134,22 +127,14 @@ def _render_turn(turn: dict[str, object], ai_config: AIConfig | None) -> None:
 
 def render_chatbot_panel(
     submission: dict[str, object] | None,
-    test_case_id: str = DEFAULT_TEST_CASE_ID,
     ai_config: AIConfig | None = None,
 ) -> None:
     '''Render a chronological thread without a confidence threshold.'''
-    _consume_submission(submission, test_case_id, ai_config)
-    mock_mode = (
-        ai_config.use_mock if ai_config is not None
-        else os.getenv('USE_MOCK_LLM', 'false').strip().lower() == 'true'
-    )
-    mode_label = 'Mock mode · ' if mock_mode else ''
+    _consume_submission(submission, ai_config)
     with st.container(height=736, border=True):
         st.markdown(
             '<div class=chat-heading><span>Chat Thread</span>'
-            '<small>{}grounding theo trang và đoạn chọn</small></div>'.format(
-                mode_label
-            ),
+            '<small>grounding theo trang và đoạn chọn</small></div>',
             unsafe_allow_html=True,
         )
         if not st.session_state.chat_turns:

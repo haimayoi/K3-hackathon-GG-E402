@@ -119,9 +119,39 @@ def test_document_viewer_keeps_scroll_on_outer_scroller():
     assert 'overflow: hidden;' in slide_rule
 
 
+def test_document_viewer_highlight_is_translucent_and_click_clears_it():
+    frontend = (
+        Path(__file__).parents[1]
+        / 'components'
+        / 'document_selector_frontend'
+        / 'index.html'
+    ).read_text(encoding='utf-8')
+    assert '--selection: rgba(' in frontend
+    assert 'background: var(--selection);' in frontend
+    assert 'function clearActiveSelection()' in frontend
+    assert 'window.CSS?.highlights?.delete("active-passage");' in frontend
+    assert 'article.addEventListener("click", (event) =>' in frontend
+    assert 'if (selection && !selection.isCollapsed) return;' in frontend
+
+
+def test_selection_prefills_explanation_question():
+    frontend = (
+        Path(__file__).parents[1]
+        / 'components'
+        / 'document_selector_frontend'
+        / 'index.html'
+    ).read_text(encoding='utf-8')
+    assert 'question.value = `Giải thích //${text}//`;' in frontend
+    assert 'suggestedQuestion' not in frontend
+
+
 def test_app_does_not_render_api_key_or_model_inputs():
     app_source = (Path(__file__).parents[1] / 'app.py').read_text(encoding='utf-8')
     assert 'render_ai_settings' not in app_source
     assert 'runtime_api_key' not in app_source
     assert 'Cấu hình AI' not in app_source
     assert 'handle_document_switch' in app_source
+    assert 'render_scenario_control' not in app_source
+    assert 'render_test_case_control' not in app_source
+    assert 'TEST_CASES' not in app_source
+    assert 'active_test_case' not in app_source

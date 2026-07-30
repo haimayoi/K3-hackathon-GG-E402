@@ -19,7 +19,6 @@ def render_document_panel(
     document: str,
     component_key: str = "document-selector",
     document_title: str = DOCUMENT_TITLE,
-    question_placeholder: str = "Nhập câu hỏi của bạn…",
     focus_page: int | None = None,
     pages: list[dict[str, object]] | None = None,
     library_documents: list[dict[str, object]] | None = None,
@@ -29,7 +28,6 @@ def render_document_panel(
     value = _document_selector(
         title=document_title,
         document=document,
-        question_placeholder=question_placeholder,
         focus_page=focus_page,
         pages=pages or [],
         library_documents=library_documents or [],

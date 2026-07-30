@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-07-30T14:04:02.559254+00:00",
+  "provider": "openai",
+  "model": "gpt-4o-mini",
+  "case_event_id": "1785420233482-52f86c423d4dd8",
+  "page_number": 13,
+  "selected_text_sha256": "206669234d46f64f31cf100e3daeaf580fd615b3b54aaf4efe043ddedfb94ec0",
+  "question": "Giải thích //Model không nhìn từ nguyên vẹn. Nó cắt văn bản thành các mảnh nhỏ gọi là token: có từ là một mảnh, có từ vỡ ba bốn mảnh, cả dấu câu và khoảng trắng cũng là mảnh. Ví dụ: \"Hello world\" ≈ 2 token, nhưng \"Xin chào\" có thể tới 3–4 token. Tiếng Việt, code, JSON tốn token hơn tiếng Anh HACKATHON thường — vì dấu thanh, ký tự đặc biệt và cấu trúc bị - cắt nhỏ ra.//",
+  "status": "grounded",
+  "latency_ms": 9037,
+  "parse_validation": "valid",
+  "citation_validation": "valid",
+  "error": null
+}

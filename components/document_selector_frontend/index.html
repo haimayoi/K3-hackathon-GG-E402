@@ -13,7 +13,7 @@
         --soft: #f6f8fb;
         --accent: #635bff;
         --accent-dark: #5148e5;
-        --selection: #dcd9ff;
+        --selection: rgba(99, 91, 255, .28);
       }
 
       * { box-sizing: border-box; }
@@ -371,7 +371,7 @@
         user-select: text;
       }
 
-      .text-layer span::selection { background: rgba(121, 153, 255, .48); }
+      .text-layer span::selection { background: var(--selection); }
 
       .empty-page {
         display: grid;
@@ -412,7 +412,7 @@
 
       article::selection, article *::selection { background: var(--selection); }
       ::highlight(active-passage) {
-        background: #ccc8ff;
+        background: var(--selection);
         color: inherit;
       }
 
@@ -420,7 +420,7 @@
         position: absolute;
         z-index: 2;
         border-radius: 3px;
-        background: #ccc8ff;
+        background: var(--selection);
         pointer-events: none;
         mix-blend-mode: multiply;
       }
@@ -635,7 +635,6 @@
       let anchorRect = null;
       let selectedRange = null;
       let selectedPageNumber = null;
-      let suggestedQuestion = "";
       let currentPage = 1;
       let totalPages = 1;
       let zoomLevel = 100;
@@ -660,6 +659,17 @@
 
       function clearOverlayHighlight() {
         viewer.querySelectorAll(".selection-overlay").forEach((node) => node.remove());
+      }
+
+      function clearActiveSelection() {
+        hidePopover(false);
+        window.getSelection()?.removeAllRanges();
+        window.CSS?.highlights?.delete("active-passage");
+        clearOverlayHighlight();
+        selectedText = "";
+        selectedRange = null;
+        selectedPageNumber = null;
+        anchorRect = null;
       }
 
       function renderOverlayHighlight() {
@@ -780,10 +790,8 @@
         persistHighlight(range);
         popover.style.visibility = "hidden";
         popover.classList.add("visible");
-        if (!question.value.trim() && suggestedQuestion) {
-          question.value = suggestedQuestion;
-          question.dispatchEvent(new Event("input"));
-        }
+        question.value = `Giải thích //${text}//`;
+        question.dispatchEvent(new Event("input"));
         requestAnimationFrame(() => {
           anchorRect = selectedRange.getBoundingClientRect();
           positionPopover(anchorRect);
@@ -903,7 +911,6 @@
           args.title,
           args.document,
           args.pages,
-          args.question_placeholder,
           args.focus_page,
           args.library_documents,
           args.active_document_id,
@@ -913,8 +920,7 @@
         renderLibrary(args.library_documents, args.active_document_id);
         title.textContent = args.title || "Tài liệu học tập";
         sidebarFileName.textContent = args.title || "Tài liệu học tập";
-        suggestedQuestion = args.question_placeholder || "";
-        question.placeholder = suggestedQuestion || "Nhập câu hỏi của bạn…";
+        question.placeholder = "Nhập câu hỏi của bạn…";
         article.replaceChildren();
         selectedRange = null;
         window.CSS?.highlights?.delete("active-passage");
@@ -995,6 +1001,13 @@
 
       article.addEventListener("mouseup", () => setTimeout(captureSelection, 0));
       article.addEventListener("keyup", () => setTimeout(captureSelection, 0));
+      article.addEventListener("click", (event) => {
+        const slide = event.target.closest?.(".slide-canvas, .page-text");
+        if (!slide || !selectedRange) return;
+        const selection = window.getSelection();
+        if (selection && !selection.isCollapsed) return;
+        clearActiveSelection();
+      });
       scroller.addEventListener("scroll", () => {
         if (popover.classList.contains("visible") && anchorRect) hidePopover(false);
         if (!(window.CSS?.highlights && window.Highlight)) renderOverlayHighlight();
@@ -1027,7 +1040,7 @@
         }
       });
 
-      close.addEventListener("click", () => hidePopover(true));
+      close.addEventListener("click", clearActiveSelection);
       popover.addEventListener("submit", (event) => {
         event.preventDefault();
         const text = question.value.trim();
@@ -1040,7 +1053,7 @@
             question: text,
           },
         });
-        hidePopover(true);
+        clearActiveSelection();
       });
 
       window.addEventListener("message", (event) => {

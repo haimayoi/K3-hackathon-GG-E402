@@ -6,7 +6,6 @@ import streamlit as st
 
 from components.chatbot_panel import render_chatbot_panel
 from components.document_panel import render_document_panel
-from components.mock_data import DEFAULT_TEST_CASE_ID, TEST_CASES
 from components.pdf_loader import DEFAULT_PDF_PATH, load_pdf_path
 from services.ai_client import AIConfig
 
@@ -58,14 +57,6 @@ def initialize_session_state() -> None:
         st.session_state.last_submission_id = None
     if "selector_generation" not in st.session_state:
         st.session_state.selector_generation = 0
-    if "active_test_case" not in st.session_state:
-        st.session_state.active_test_case = DEFAULT_TEST_CASE_ID
-    if "viewer_test_case" not in st.session_state:
-        st.session_state.viewer_test_case = st.session_state.active_test_case
-    if "viewer_focus_page" not in st.session_state:
-        st.session_state.viewer_focus_page = 1
-
-
     if 'active_document_id' not in st.session_state:
         st.session_state.active_document_id = 'd1'
     if 'viewer_document_id' not in st.session_state:
@@ -77,53 +68,6 @@ def reset_session() -> None:
     st.session_state.chat_turns = []
     st.session_state.last_submission_id = None
     st.session_state.selector_generation += 1
-
-
-def render_test_case_control() -> str:
-    """Keep the three deterministic mock routes without exposing file import UI."""
-    label_col, picker_col = st.columns([2.2, 3], vertical_alignment="center")
-    with label_col:
-        st.markdown(
-            "<div class='scenario-label'><strong>AI & LLM Foundation</strong>"
-            "<span>Day 1 · 23 trang · chọn một kịch bản để kiểm thử</span></div>",
-            unsafe_allow_html=True,
-        )
-    with picker_col:
-        selected_test_case = st.selectbox(
-            "Kịch bản mock",
-            list(TEST_CASES),
-            key="active_test_case",
-            label_visibility="collapsed",
-            format_func=lambda item: (
-                f"{TEST_CASES[item]['title']} · {TEST_CASES[item]['slide_hint']}"
-            ),
-        )
-    if selected_test_case != st.session_state.viewer_test_case:
-        st.session_state.viewer_test_case = selected_test_case
-        st.session_state.viewer_focus_page = int(
-            TEST_CASES[selected_test_case]["focus_page"]
-        )
-    return selected_test_case
-
-
-def render_scenario_control() -> str:
-    '''Choose a deterministic prompt suggestion without mislabeling the PDF.'''
-    st.caption('Câu hỏi gợi ý để kiểm thử luồng chọn đoạn → giải thích → quiz')
-    selected_test_case = st.selectbox(
-        'Kịch bản kiểm thử',
-        list(TEST_CASES),
-        key='active_test_case',
-        label_visibility='collapsed',
-        format_func=lambda item: '{} · {}'.format(
-            TEST_CASES[item]['title'], TEST_CASES[item]['slide_hint']
-        ),
-    )
-    if selected_test_case != st.session_state.viewer_test_case:
-        st.session_state.viewer_test_case = selected_test_case
-        st.session_state.viewer_focus_page = int(
-            TEST_CASES[selected_test_case]['focus_page']
-        )
-    return selected_test_case
 
 
 def get_active_document(
@@ -149,7 +93,6 @@ def handle_document_switch(
     if requested_id in available_ids and requested_id != st.session_state.active_document_id:
         st.session_state.active_document_id = requested_id
         st.session_state.viewer_document_id = requested_id
-        st.session_state.viewer_focus_page = 1
         st.session_state.selector_generation += 1
         st.rerun()
     return None
@@ -217,28 +160,6 @@ def apply_page_styles() -> None:
             color: var(--app-muted);
             font-size: .91rem;
         }
-
-        .scenario-label {
-            display: flex;
-            flex-direction: column;
-            gap: .12rem;
-            padding: .25rem 0 .55rem;
-            color: var(--app-ink);
-        }
-
-        .scenario-label strong { font-size: .88rem; }
-        .scenario-label span { color: var(--app-muted); font-size: .76rem; }
-
-        .scenario-label {
-            display: flex;
-            flex-direction: column;
-            gap: .12rem;
-            padding: .25rem 0 .55rem;
-            color: var(--app-ink);
-        }
-
-        .scenario-label strong { font-size: .88rem; }
-        .scenario-label span { color: var(--app-muted); font-size: .76rem; }
 
         .chat-heading {
             position: sticky;
@@ -349,8 +270,6 @@ def main() -> None:
 
     documents = load_course_documents()
     active_document = get_active_document(documents)
-    test_case_id = render_scenario_control()
-    scenario = TEST_CASES[test_case_id]
     ai_config = AIConfig.from_env()
 
     left_col, right_col = st.columns([1.34, 0.66], gap="small")
@@ -362,8 +281,6 @@ def main() -> None:
                 f"{st.session_state.selector_generation}"
             ),
             document_title=str(active_document["name"]),
-            question_placeholder=str(scenario["suggested_question"]),
-            focus_page=int(st.session_state.viewer_focus_page),
             library_documents=[
                 {
                     'course_id': item['course_id'],
@@ -378,11 +295,7 @@ def main() -> None:
         )
         submission = handle_document_switch(submission, documents)
     with right_col:
-        render_chatbot_panel(
-            submission,
-            test_case_id=test_case_id,
-            ai_config=ai_config,
-        )
+        render_chatbot_panel(submission, ai_config=ai_config)
 
 
 if __name__ == "__main__":
