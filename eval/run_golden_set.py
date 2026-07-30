@@ -1,6 +1,6 @@
 """Run eval/golden_set.jsonl through the real AI call and record a results table.
 
-Usage (from repo root, with GEMINI_API_KEY set in .env):
+Usage (from repo root, with OPENAI_API_KEY set in .env):
     python eval/run_golden_set.py
 
 Writes:
@@ -17,7 +17,8 @@ from __future__ import annotations
 
 import json
 import sys
-from datetime import date
+from datetime import datetime, timezone
+import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -55,7 +56,7 @@ def check_schema(result: dict) -> bool | None:
 
 def main() -> None:
     cases = load_cases()
-    run_id = "run-01-" + date.today().strftime("%Y%m%d")
+    run_id = "run-live-" + datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid.uuid4().hex[:8]
     md_path = Path(__file__).parent / f"{run_id}.md"
     jsonl_path = Path(__file__).parent / f"{run_id}.jsonl"
 
@@ -64,7 +65,9 @@ def main() -> None:
     schema_checks = []
 
     for case in cases:
-        result = generate_comprehension_quiz(case["selected_text"], case["tutor_answer"])
+        result = generate_comprehension_quiz(
+            case["selected_text"], case["tutor_answer"], case.get("source")
+        )
         status_match = result.get("status") == case["expected_status"]
         schema_valid = check_schema(result)
         if status_match:

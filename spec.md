@@ -2,7 +2,7 @@
 Hướng: [x] A — VLearn  [ ] B — Trợ lý Học viên  [ ] C — Làn mở
 Loại: [ ] Tối ưu tính năng có sẵn  [x] Tính năng mới
 
-> **TODO trước khi commit:** điền số nhóm/zone ở dòng tiêu đề. Canvas gốc: `canvas-cp1.md`.
+> **HUMAN ACTION REQUIRED:** điền số nhóm/zone; không suy đoán. Canvas gốc: `canvas-cp1.md`.
 
 ## §1. User & Job
 
@@ -75,11 +75,14 @@ Loại: [ ] Tối ưu tính năng có sẵn  [x] Tính năng mới
   2. Không thay thế quiz cuối buổi chính thức.
   3. Không chấm điểm học viên.
   4. Không tự động báo cáo lên giảng viên ở bản đầu.
-- **Mức prototype:** [x] Mock — flow bấm trọn được, phần lõi (sinh quiz + quyết định từ chối khi không đủ
-  căn cứ) là lời gọi AI thật (`gpt-4o-mini`, `components/ai_client.py`). **Phần mock, ghi rõ:** câu trả
-  lời chính của tutor (`MOCK_ANSWER`), độ tin cậy hiển thị (`MOCK_CONFIDENCE = 0.87` cố định), và câu hỏi
-  "thử lại" sau khi trả lời sai (`RETRY_QUESTION` tĩnh) — tất cả nằm trong `components/mock_data.py`.
-- **Automation: [x] Conditional** — tự động chèn quiz sau các lượt "dạy" thật sự; bỏ qua/từ chối khi
+- **Mức prototype:** [x] Working hackathon prototype — `app.py` đọc trực tiếp 2 PDF khoá học, xác minh
+  trang/đoạn bằng lookup xác định, gọi OpenAI để sinh một artifact có cấu trúc (tutor answer + đúng một
+  quiz 4 lựa chọn + một retry dễ hơn), kiểm tra schema/grounding trước khi hiển thị và chấm đáp án bằng
+  `correct_index` xác định. `components/mock_data.py` và `codebase/` chỉ là artifact CP2 lịch sử, không
+  được import bởi app chuẩn; fixed confidence 0.87 và static retry không còn trong flow chuẩn.
+- **Bounded state machine:** `RECEIVED_CONTEXT → ELIGIBILITY_CHECK → SOURCE_VALIDATION → QUIZ_GENERATION
+  → QUIZ_VALIDATION → PRESENTED → ANSWER_EVALUATION → FEEDBACK → RETRY hoặc COMPLETED`; nhánh cuối
+  an toàn: `ABSTAINED`, `ERROR_FALLBACK`. Không có vòng ReAct hoặc tool loop mở.- **Automation: [x] Conditional** — tự động chèn quiz sau các lượt "dạy" thật sự; bỏ qua/từ chối khi
   input không phải nội dung học thuật hoặc không đủ căn cứ (status="insufficient" trong `ai_client.py`).
   **Lý do (cost-of-error):** quiz sai thời điểm gây phiền nhưng sửa rẻ — học viên bỏ qua được (G8). Ngược
   lại, im lặng không bao giờ kiểm tra thì hiểu sai âm thầm tích luỹ tới lúc thi mới lộ ra — cost đắt hơn
@@ -119,14 +122,12 @@ Loại: [ ] Tối ưu tính năng có sẵn  [x] Tính năng mới
 
 - **Happy path:** đoạn bôi đen có nội dung rõ ràng (vd trang 4 d1 — "Ba nhóm AI chính") → quiz xuất hiện,
   đúng khái niệm vừa giải thích → trả lời đúng → `✅ Chính xác!` + giải thích ngắn, học viên tiếp tục.
-- **Low-confidence (②):** hiện tại đường này **một phần còn mock** — `quiz_visible` gate dựa trên
-  `MOCK_CONFIDENCE (0.87) >= threshold (0.8)`, cả hai đều là hằng số cố định trong bản demo nên gate này
-  chưa thực sự biến thiên. Hành vi *tương đương* low-confidence thực tế lại nằm ở quyết định AI thật:
-  khi input mơ hồ (vd chỉ 1 từ viết tắt), AI tự quyết `status="ok"` (nếu tutor_answer đủ bù) hoặc
-  `status="insufficient"` (nếu không) — xem G04-G06.
-- **Failure/không căn cứ (①):** trang/thuật ngữ không có trong tài liệu → `st.info` từ chối kèm lý do cụ
+- **Low-evidence / mơ hồ (②):** không hiển thị confidence giả. Eligibility và source validation xác định
+  xem đoạn ngắn có tồn tại trên trang và cửa sổ context có đủ nội dung hay không; nếu thiếu thì
+  `ABSTAINED / insufficient_context`, nếu đủ thì tiếp tục. Output malformed được sửa tối đa một lần;
+  sau đó `schema_invalid` hoặc `verification_failed` và abstain.- **Failure/không căn cứ (①):** trang/thuật ngữ không có trong tài liệu → `st.info` từ chối kèm lý do cụ
   thể (không phải thông báo lỗi chung chung), không chặn học viên tiếp tục đọc.
-- **Correction (user sửa):** trả lời quiz sai → `_render_retry_quiz` hiện ngay một câu hỏi đơn giản hơn
+- **Correction (user sửa):** trả lời quiz sai → `components.quiz_panel` hiện câu retry 4 lựa chọn đơn giản hơn đã được sinh và xác minh cùng artifact
   trong cùng luồng chat, học viên sửa ngay tại chỗ, không cần thao tác thêm.
 - **Khi bị đòi ngoài phạm vi (③):** yêu cầu vượt quyền (tóm tắt cả tài liệu, câu hỏi ngoài học thuật, câu
   có đáp án đúng nhưng ngoài môn học) → từ chối, gợi ý hướng đi hợp lệ thay vì im lặng.
@@ -156,6 +157,7 @@ Loại: [ ] Tối ưu tính năng có sẵn  [x] Tính năng mới
   | 1 (golden set v1 — sau phát hiện lỗi grounding, không dùng để chấm) | 27/28 (96%) | G11 ("2+2=?") fail |
   | 2 (golden set v2 — grounded lại đúng 2 file thật) | 27/28 (96%) | G11 fail lại, xác nhận lỗi hệ thống |
   | 3 (sau khi sửa system instruction) | **28/28 (100%)** | G11 pass; kiểm tra hồi quy G04/G05/G26 không bị over-refuse |
+  | Live hardening 7889852f | **27/28 (96%)** | G26 bị over-refuse; schema 18/18; chiều grounding/concept/domain chờ human review |
 
 ## §8. Phân công & kế hoạch
 
@@ -194,3 +196,4 @@ Loại: [ ] Tối ưu tính năng có sẵn  [x] Tính năng mới
 | CP3 | Lượt chạy 1-2: 27/28 (96%), case G11 ("2+2=?") liên tục fail — AI tự ra quiz cho phép tính số học ngoài phạm vi khoá học | Phát hiện qua chạy golden set v2, lặp lại 2/2 lượt → xác nhận lỗi hệ thống, không phải ngẫu nhiên |
 | CP3 | Sửa system instruction: thêm rule "có đáp án đúng-sai rõ ràng ≠ đủ điều kiện ra quiz", kèm ví dụ "2+2=?" | Sửa trực tiếp nguyên nhân gốc của case G11 |
 | CP3 | Lượt chạy 3: 28/28 (100%), kiểm tra hồi quy G04/G05/G26 (case dễ over-refuse) vẫn đúng | Xác nhận fix không phá vỡ hành vi đúng ở case khác — nguyên tắc "sửa xong chạy trọn bộ" (guide §4.1) |
+| Final hardening | Thay mock tutor/fixed confidence/static retry bằng lookup PDF, bounded state machine, validated structured generation, deterministic scoring, privacy-minimized trace, immutable run IDs và offline guardrail suite | Đưa prototype khớp spec thực tế; không thay quality bar đã khoá |

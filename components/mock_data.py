@@ -1,4 +1,4 @@
-"""Static content used by the prototype."""
+"""Historical CP2 mock fixtures; canonical app.py does not import this module."""
 
 DOCUMENT_TITLE = "Overfitting và Underfitting trong Machine Learning"
 

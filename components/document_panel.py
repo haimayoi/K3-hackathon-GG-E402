@@ -1,11 +1,9 @@
-"""Interactive document viewer with an anchored question popover."""
-
+"""Interactive text slide viewer with a page-grounded question popover."""
 from pathlib import Path
 from typing import Any
 
 import streamlit.components.v1 as st_components
 
-from components.mock_data import DOCUMENT_TITLE
 
 
 _FRONTEND_PATH = Path(__file__).parent / "document_selector_frontend"
@@ -15,14 +13,20 @@ _document_selector = st_components.declare_component(
 )
 
 
+
 def render_document_panel(
-    document: str,
+    title: str,
+    page: int,
+    page_count: int,
+    page_texts: list[str],
     component_key: str = "document-selector",
 ) -> dict[str, Any] | None:
-    """Render the document and return a question submitted from its popover."""
+    """Render extracted slide text and return a page-grounded question."""
     value = _document_selector(
-        title=DOCUMENT_TITLE,
-        document=document,
+        title=title,
+        page=page,
+        page_count=page_count,
+        page_texts=page_texts,
         default=None,
         key=component_key,
     )
