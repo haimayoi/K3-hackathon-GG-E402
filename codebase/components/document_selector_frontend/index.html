@@ -233,6 +233,10 @@
         border-radius: 5px;
         background: #fff;
       }
+      body, .viewer, .filebar, .library, .reader, .reader-toolbar, .reader-footer, .page-card, .page-meta, .empty-page, .popover, .slide-canvas, .slide-image {
+        -webkit-user-select: none;
+        user-select: none;
+      }
       .slide-image {
         display: block;
         width: 100%;
@@ -244,18 +248,27 @@
         position: absolute;
         top: 0;
         left: 0;
+        right: 0;
+        bottom: 0;
         z-index: 3;
         transform-origin: 0 0;
+        pointer-events: none;
+        -webkit-user-select: text;
         user-select: text;
       }
       .text-layer span {
         position: absolute;
-        overflow: hidden;
         color: transparent;
         cursor: text;
-        line-height: 1;
+        line-height: 1.05;
         white-space: pre;
+        pointer-events: auto;
+        -webkit-user-select: text;
         user-select: text;
+      }
+      .popover input, .popover textarea {
+        -webkit-user-select: auto;
+        user-select: auto;
       }
       .text-layer span::selection, article *::selection { background: var(--selection); }
       .empty-page {
@@ -549,6 +562,12 @@
           clearActiveSelection();
           return;
         }
+        const startLayer = startNode?.closest(".text-layer");
+        const endLayer = endNode?.closest(".text-layer");
+        if (!startLayer || startLayer !== endLayer) {
+          clearActiveSelection();
+          return;
+        }
         const text = selection.toString().replace(/\s+/g, " ").trim();
         if (!text) return;
         selectedText = text;
@@ -695,13 +714,14 @@
             layer.style.height = `${Number(pageData.height) || 1}px`;
             (Array.isArray(pageData.words) ? pageData.words : []).forEach((word) => {
               const wordNode = document.createElement("span");
+              const width = Math.max(1, Number(word.x1) - Number(word.x0));
               const height = Math.max(1, Number(word.y1) - Number(word.y0));
               wordNode.textContent = `${String(word.text || "")} `;
               wordNode.style.left = `${Number(word.x0)}px`;
               wordNode.style.top = `${Number(word.y0)}px`;
-              wordNode.style.width = `${Math.max(1, Number(word.x1) - Number(word.x0) + height * .35)}px`;
-              wordNode.style.height = `${height * 1.18}px`;
-              wordNode.style.fontSize = `${height * .92}px`;
+              wordNode.style.minWidth = `${width}px`;
+              wordNode.style.height = `${height * 1.05}px`;
+              wordNode.style.fontSize = `${height * 0.88}px`;
               layer.appendChild(wordNode);
             });
             canvas.appendChild(layer);
@@ -770,6 +790,18 @@
           },
         });
         clearActiveSelection();
+      });
+      window.addEventListener("contextmenu", (event) => {
+        if (popover.contains(event.target)) return;
+        if (selectedText || selectedRange || popover.classList.contains("visible")) {
+          clearActiveSelection();
+        }
+      });
+      window.addEventListener("mousedown", (event) => {
+        if (popover.contains(event.target) || article.contains(event.target)) return;
+        if (selectedText || selectedRange || popover.classList.contains("visible")) {
+          clearActiveSelection();
+        }
       });
       window.addEventListener("resize", () => {
         syncTextLayers();

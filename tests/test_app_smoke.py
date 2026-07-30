@@ -9,7 +9,7 @@ class CanonicalAppSmokeTest(unittest.TestCase):
         app = AppTest.from_file("app.py", default_timeout=90)
         app.run()
         self.assertEqual(len(app.exception), 0)
-        self.assertEqual(len(app.file_uploader), 1)
+        self.assertEqual(len(app.file_uploader), 0)
         self.assertGreaterEqual(len(app.button), 1)
         self.assertEqual(len(app.selectbox), 0)
 

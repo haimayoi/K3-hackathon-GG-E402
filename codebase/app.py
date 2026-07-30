@@ -7,7 +7,7 @@ import streamlit as st
 from components.chatbot_panel import render_chatbot_panel
 from components.course_materials import DOCUMENTS, normalize_submission
 from components.document_panel import render_document_panel
-from components.pdf_loader import extract_pdf_document, load_pdf_path
+from components.pdf_loader import document_id_for_bytes, extract_pdf_document, load_pdf_path
 
 
 st.set_page_config(
@@ -26,7 +26,7 @@ def initialize_session_state() -> None:
         "selector_generation": 0,
         "active_document_id": "d1",
         "uploaded_documents": {},
-        "selected_page": 29,
+        "selected_page": 1,
         "pending_slide_page": None,
     }
     for key, value in defaults.items():
@@ -69,18 +69,25 @@ def document_registry() -> dict[str, dict[str, object]]:
 
 def ingest_upload(uploaded_file: object) -> bool:
     """Extract one new in-memory upload and add it to the session library."""
-    data = uploaded_file.getvalue()
-    document = extract_pdf_document(data, uploaded_file.name, "upload")
-    document_id = str(document["id"])
-    if document_id in st.session_state.uploaded_documents:
+    if not uploaded_file:
         return False
-    document["day_label"] = "PDF tải lên"
-    st.session_state.uploaded_documents[document_id] = document
-    st.session_state.active_document_id = document_id
-    st.session_state.selected_page = 1
-    st.session_state.pending_slide_page = None
-    st.session_state.selector_generation += 1
-    return True
+    data = uploaded_file.getvalue()
+    document_id = document_id_for_bytes(data)
+    already_in_library = document_id in st.session_state.uploaded_documents
+
+    if not already_in_library:
+        document = extract_pdf_document(data, uploaded_file.name, "upload")
+        document["day_label"] = "PDF tải lên"
+        st.session_state.uploaded_documents[document_id] = document
+
+    if st.session_state.active_document_id != document_id:
+        st.session_state.active_document_id = document_id
+        st.session_state.selected_page = 1
+        st.session_state.pending_slide_page = None
+        st.session_state.selector_generation += 1
+        return True
+
+    return not already_in_library
 
 
 def handle_document_switch(
@@ -189,8 +196,8 @@ def main() -> None:
         st.session_state.pending_slide_page = None
     apply_page_styles()
 
-    title_col, upload_col, action_col = st.columns(
-        [5, 1.15, 1.15], vertical_alignment="center"
+    title_col, action_col = st.columns(
+        [6.2, 1.2], vertical_alignment="center"
     )
     with title_col:
         st.markdown(
@@ -199,22 +206,6 @@ def main() -> None:
             "<p class='app-subtitle'>Đọc chủ động, hỏi theo ngữ cảnh và kiểm tra mức độ hiểu bài.</p>",
             unsafe_allow_html=True,
         )
-    with upload_col:
-        with st.popover("＋ Thêm PDF", use_container_width=True):
-            uploaded_file = st.file_uploader(
-                "Tải tài liệu PDF",
-                type=["pdf"],
-                accept_multiple_files=False,
-                help="Tối đa 20 MB và 100 trang. File không được ghi vào repository.",
-            )
-            st.caption("PDF tối đa 20 MB · 100 trang · chưa hỗ trợ OCR")
-            if uploaded_file is not None:
-                try:
-                    if ingest_upload(uploaded_file):
-                        st.rerun()
-                    st.success("Tài liệu đã có trong thư viện phiên này.")
-                except ValueError as exc:
-                    st.error(str(exc))
     with action_col:
         if st.button("↻ Bắt đầu lại", use_container_width=True):
             reset_session()
