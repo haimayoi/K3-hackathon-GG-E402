@@ -2,6 +2,24 @@
 
 A bounded, source-grounded comprehension check for learners using the VLearn tutor. After a learner selects course text and asks a question, the app validates the cited page, answers from that context, creates exactly one four-option quiz, scores the selected answer deterministically, gives option-specific misconception feedback, and offers one easier retry.
 
+## Current PDF experience
+
+- Day 1 and Day 2 remain bundled course sources.
+- A learner can upload a PDF of at most 20 MB and 100 pages; bytes remain in the Streamlit session and are never written to the repository.
+- Every page is rendered as the original PDF image with a word-coordinate selection layer.
+- The viewer contains document switching, previous/next navigation, current/total page status, zoom, and an anchored question input.
+- Question events carry document ID, page number, selected text, and question into the original bounded Hung learning agent.
+- Image-only PDFs remain viewable, but OCR is intentionally not included. Empty text is never sent to the model.
+
+Run from the repository root:
+
+```powershell
+python -m pip install -r requirements.txt
+python -m streamlit run app.py
+```
+
+The root files are launch/dependency shims. The canonical Hung implementation remains in `codebase/`; `components/learning_agent.py` and the evaluation contracts there are preserved.
+
 This is a hackathon prototype, not an open-ended autonomous agent. Unknown group and zone metadata remain intentionally unfilled: **HUMAN ACTION REQUIRED — Group [XX], Zone [X]**.
 
 ## What works

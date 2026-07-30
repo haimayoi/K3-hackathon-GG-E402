@@ -9,7 +9,16 @@ from components.learning_agent import AgentState, run_learning_check
 from components.quiz_panel import render_quiz_messages
 
 
-def _consume_submission(submission: dict[str, object] | None, page: CoursePage | None) -> None:
+def _is_duplicate_submission(event_id: str, last_submission_id: object) -> bool:
+    """Return whether a Streamlit component event was already consumed."""
+    return bool(event_id) and event_id == str(last_submission_id or "")
+
+
+def _consume_submission(
+    submission: dict[str, object] | None,
+    page: CoursePage | None,
+    document: dict[str, object] | None = None,
+) -> None:
     if not submission:
         return
     event_id = str(submission.get("event_id", ""))
@@ -17,15 +26,32 @@ def _consume_submission(submission: dict[str, object] | None, page: CoursePage |
     question = str(submission.get("question", "")).strip()
     if not event_id or not selected_text or not question:
         return
-    if event_id == st.session_state.last_submission_id:
+    if _is_duplicate_submission(event_id, st.session_state.last_submission_id):
         return
+
+    document_id = str(submission.get("document_id", "")).strip()
+    try:
+        page_number = int(submission.get("page_number", submission.get("page", 0)))
+    except (TypeError, ValueError):
+        page_number = 0
+    if page and (
+        (document_id and page.document_id != document_id) or page.page != page_number
+    ):
+        page = None
 
     st.session_state.last_submission_id = event_id
     with st.spinner("Đang kiểm tra nguồn và tạo một câu hỏi hiểu bài…"):
         run = run_learning_check(question=question, selected_text=selected_text, page=page)
+    document_name = str(
+        (document or {}).get("name") or (page.document_title if page else "Tài liệu không xác định")
+    )
     st.session_state.chat_turns.append(
         {
             "id": event_id,
+            "document_id": document_id or (page.document_id if page else ""),
+            "document_name": document_name,
+            "page_number": page_number,
+            "source_id": page.source_id if page else None,
             "selected_text": selected_text,
             "question": question,
             "run": run,
@@ -71,12 +97,18 @@ def _render_turn(turn: dict[str, object]) -> None:
     run = turn["run"]
     with st.chat_message("user", avatar="🙂"):
         st.write(str(turn["question"]))
-        st.caption(f"Đoạn đã chọn: {str(turn['selected_text'])[:180]}")
+        st.caption(
+            f"{turn.get('document_name', 'Tài liệu')} · trang {turn.get('page_number', '?')} · "
+            f"đoạn đã chọn: {str(turn['selected_text'])[:180]}"
+        )
 
     if run.state == AgentState.PRESENTED and run.artifact:
         with st.chat_message("assistant", avatar="🧭"):
             st.write(run.artifact.tutor_answer)
-            st.markdown(f"> **Nguồn:** `{run.source_id}`")
+            st.markdown(
+                f"> **Nguồn:** {turn.get('document_name', 'Tài liệu')} · "
+                f"trang {turn.get('page_number', '?')} · `{run.source_id}`"
+            )
         render_quiz_messages(turn)
     else:
         with st.chat_message("assistant", avatar="🧭"):
@@ -88,12 +120,16 @@ def _render_turn(turn: dict[str, object]) -> None:
     _render_trace(run)
 
 
-def render_chatbot_panel(submission: dict[str, object] | None, page: CoursePage | None) -> None:
-    _consume_submission(submission, page)
-    with st.container(height=656, border=True):
+def render_chatbot_panel(
+    submission: dict[str, object] | None,
+    page: CoursePage | None,
+    document: dict[str, object] | None = None,
+) -> None:
+    _consume_submission(submission, page, document)
+    with st.container(height=736, border=True):
         st.markdown(
-            "<div class='chat-heading'><span>Learning Check</span>"
-            "<small>Grounded · bounded · deterministic scoring</small></div>",
+            "<div class='chat-heading'><span>Chat Thread</span>"
+            "<small>grounding theo trang và đoạn chọn</small></div>",
             unsafe_allow_html=True,
         )
         if not st.session_state.chat_turns:

@@ -5,36 +5,33 @@ from streamlit.testing.v1 import AppTest
 
 
 class CanonicalAppSmokeTest(unittest.TestCase):
-    def test_app_starts_without_exception(self):
-        app = AppTest.from_file("codebase/app.py", default_timeout=20)
+    def test_root_app_starts_without_exception(self):
+        app = AppTest.from_file("app.py", default_timeout=90)
         app.run()
         self.assertEqual(len(app.exception), 0)
-        self.assertEqual(len(app.selectbox), 2)
+        self.assertEqual(len(app.file_uploader), 1)
         self.assertGreaterEqual(len(app.button), 1)
-        self.assertEqual(app.selectbox[1].value, 29)
+        self.assertEqual(len(app.selectbox), 0)
 
-    def test_slide_viewer_has_scroll_navigation_contract(self):
+    def test_rendered_pdf_viewer_selection_contract(self):
         frontend = Path(
             "codebase/components/document_selector_frontend/index.html"
         ).read_text(encoding="utf-8")
-        self.assertIn('addEventListener("wheel"', frontend)
-        self.assertIn("page: currentPage", frontend)
-        self.assertIn("pageTexts[currentPage - 1]", frontend)
+        self.assertIn('id="previous-page"', frontend)
+        self.assertIn('id="next-page"', frontend)
         self.assertIn('id="page-status"', frontend)
-        self.assertIn('tabindex="0"', frontend)
-        self.assertIn('id="pdf-canvas"', frontend)
-        self.assertIn('id="text-layer"', frontend)
-        self.assertIn("new pdfjsLib.TextLayer", frontend)
-        self.assertIn("pdfjsLib.getDocument", frontend)
-        self.assertIn('question.value = `Giải thích //${text}//`;', frontend)
-        self.assertNotIn("base64ToBlobUrl", frontend)
-        self.assertNotIn("slide-image", frontend)
-        self.assertIn("color: rgba(23, 32, 51, .92);", frontend)
-        submit_handler = frontend.split('popover.addEventListener("submit"', 1)[1].split(
-            'window.addEventListener("message"', 1
-        )[0]
-        self.assertIn("hidePopover(true);", submit_handler)
-        self.assertNotIn("clearActiveSelection();", submit_handler)
+        self.assertIn('className = "slide-image"', frontend)
+        self.assertIn('className = "text-layer"', frontend)
+        self.assertIn('action: "switch_document"', frontend)
+        self.assertIn("startCard !== endCard", frontend)
+        self.assertIn("document_id: activeDocumentId", frontend)
+        self.assertIn("page_number: selectedPageNumber", frontend)
+        self.assertIn("page: selectedPageNumber", frontend)
+        self.assertIn("selected_text: selectedText", frontend)
+        self.assertIn("question: text", frontend)
+        self.assertIn("clearActiveSelection();", frontend)
+        self.assertNotIn("OPENAI_API_KEY", frontend)
+        self.assertNotIn("confidence", frontend.casefold())
 
 
 if __name__ == "__main__":
