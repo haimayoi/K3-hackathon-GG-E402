@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 import uuid
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "codebase"))
 
 from components.ai_client import generate_comprehension_quiz  # noqa: E402
 

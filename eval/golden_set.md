@@ -1,7 +1,7 @@
 # Golden set — quiz kiểm tra hiểu (quyết định AI trung tâm)
 
 `golden_set.jsonl` — 28 case, chấm hàm `generate_comprehension_quiz(selected_text, tutor_answer)`
-trong `components/ai_client.py`.
+trong `codebase/components/ai_client.py`.
 
 ## Ràng buộc nguồn sự thật — CHỈ 2 tài liệu thật của khoá
 

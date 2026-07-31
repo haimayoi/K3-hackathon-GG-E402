@@ -1,0 +1,830 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #172033;
+        --muted: #657086;
+        --line: #e4e8ef;
+        --accent: #635bff;
+        --accent-dark: #5148e5;
+        --selection: rgba(99, 91, 255, .28);
+      }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        background: transparent;
+        color: var(--ink);
+        font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      }
+      button, textarea { font: inherit; }
+      .viewer {
+        position: relative;
+        height: 720px;
+        overflow: hidden;
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 12px 36px rgba(28, 38, 58, .07);
+      }
+      .filebar {
+        display: flex;
+        height: 60px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--line);
+      }
+      .filebar-title { display: flex; min-width: 0; align-items: center; gap: 10px; }
+      .file-icon {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        flex: 0 0 34px;
+        place-items: center;
+        border: 1px solid #d9d6ff;
+        border-radius: 9px;
+        background: #f1efff;
+        color: var(--accent);
+      }
+      .title-wrap { min-width: 0; }
+      .eyebrow {
+        margin: 0 0 2px;
+        color: var(--muted);
+        font-size: 10px;
+        font-weight: 750;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      h1 {
+        overflow: hidden;
+        margin: 0;
+        font-size: 14px;
+        font-weight: 720;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .selection-hint {
+        flex: 0 0 auto;
+        padding: 7px 10px;
+        border: 1px solid #dddafa;
+        border-radius: 999px;
+        background: #f7f6ff;
+        color: #5148a8;
+        font-size: 12px;
+        font-weight: 650;
+      }
+      .workspace {
+        display: grid;
+        height: 660px;
+        min-height: 0;
+        grid-template-columns: 195px minmax(0, 1fr);
+      }
+      .library {
+        min-width: 0;
+        overflow-y: auto;
+        padding: 14px 11px 58px;
+        border-right: 1px solid var(--line);
+        background: #f8fafc;
+      }
+      .library-heading {
+        margin: 0 4px 12px;
+        color: #758398;
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+      }
+      .document-card {
+        display: block;
+        width: 100%;
+        margin-bottom: 9px;
+        padding: 10px;
+        overflow: hidden;
+        border: 1px solid #dbe4ee;
+        border-radius: 11px;
+        background: #fff;
+        color: inherit;
+        text-align: left;
+        cursor: pointer;
+        transition: border-color .15s, box-shadow .15s, transform .15s;
+      }
+      .document-card:not(.active):hover {
+        border-color: #a9a4ef;
+        box-shadow: 0 4px 14px rgba(79, 72, 180, .10);
+        transform: translateY(-1px);
+      }
+      .document-card:focus-visible { outline: 3px solid rgba(99, 91, 255, .2); }
+      .document-card.active {
+        border-color: #9992ef;
+        background: #f8f7ff;
+        box-shadow: 0 0 0 2px rgba(99,91,255,.08);
+        cursor: default;
+      }
+      .card-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+      .card-label { color: #4b4b74; font-size: 10px; font-weight: 800; }
+      .studying {
+        padding: 3px 5px;
+        border-radius: 99px;
+        background: #e9e7ff;
+        color: #5148a8;
+        font-size: 8px;
+        font-weight: 800;
+      }
+      .card-name {
+        display: block;
+        overflow: hidden;
+        margin-top: 7px;
+        color: #25344b;
+        font-size: 11px;
+        font-weight: 700;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .card-meta { margin-top: 3px; color: #8290a2; font-size: 9px; }
+      .reader {
+        position: relative;
+        display: flex;
+        min-width: 0;
+        min-height: 0;
+        flex-direction: column;
+        overflow: hidden;
+        background: #e9edf2;
+      }
+      .reader-toolbar {
+        z-index: 5;
+        display: flex;
+        min-height: 48px;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin: 8px 10px 0;
+        padding: 6px 9px;
+        border: 1px solid #d9e2ec;
+        border-radius: 12px;
+        background: rgba(255,255,255,.97);
+        box-shadow: 0 4px 14px rgba(41,56,78,.08);
+      }
+      .mode-label, .page-status {
+        padding: 7px 10px;
+        border-radius: 8px;
+        background: #f5f4ff;
+        color: #5148a8;
+        font-size: 10px;
+        font-weight: 750;
+      }
+      .tool-group { display: flex; align-items: center; gap: 5px; }
+      .tool-button {
+        height: 32px;
+        min-width: 32px;
+        padding: 0 9px;
+        border: 1px solid #dce2ea;
+        border-radius: 8px;
+        background: #fff;
+        color: #4b5d72;
+        cursor: pointer;
+        font-size: 11px;
+        font-weight: 700;
+      }
+      .tool-button:hover { border-color: #aaa5ef; color: #5148a8; }
+      .document-scroll {
+        min-height: 0;
+        flex: 1;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 14px 16px 64px;
+        scroll-behavior: smooth;
+        scrollbar-color: #8f9ba8 #e3e9ef;
+      }
+      article {
+        max-width: 780px;
+        margin: 0 auto;
+        cursor: text;
+        transform-origin: top center;
+      }
+      .page-card {
+        margin: 0 0 16px;
+        padding: 10px;
+        border: 1px solid #d8e0e8;
+        border-radius: 12px;
+        background: #fff;
+        box-shadow: 0 3px 9px rgba(31,44,64,.07);
+      }
+      .page-card.focused {
+        border-color: #8e88e9;
+        box-shadow: 0 0 0 2px rgba(99,91,255,.10);
+      }
+      .page-meta {
+        display: flex;
+        justify-content: space-between;
+        margin: 0 2px 9px;
+        color: #8294aa;
+        font-size: 9px;
+      }
+      .slide-canvas {
+        position: relative;
+        width: 100%;
+        overflow: hidden;
+        border: 1px solid #dbe3eb;
+        border-radius: 5px;
+        background: #fff;
+      }
+      body, .viewer, .filebar, .library, .reader, .reader-toolbar, .reader-footer, .page-card, .page-meta, .empty-page, .popover, .slide-canvas, .slide-image {
+        -webkit-user-select: none;
+        user-select: none;
+      }
+      .slide-image {
+        display: block;
+        width: 100%;
+        height: auto;
+        pointer-events: none;
+        user-select: none;
+      }
+      .text-layer {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 3;
+        transform-origin: 0 0;
+        pointer-events: none;
+        -webkit-user-select: text;
+        user-select: text;
+      }
+      .text-layer span {
+        position: absolute;
+        color: transparent;
+        cursor: text;
+        line-height: 1.05;
+        white-space: pre;
+        pointer-events: auto;
+        -webkit-user-select: text;
+        user-select: text;
+      }
+      .popover input, .popover textarea {
+        -webkit-user-select: auto;
+        user-select: auto;
+      }
+      .text-layer span::selection, article *::selection { background: var(--selection); }
+      .empty-page {
+        display: grid;
+        min-height: 190px;
+        place-items: center;
+        color: #8996a7;
+        font-size: 11px;
+      }
+      .reader-footer {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        left: 195px;
+        z-index: 7;
+        display: flex;
+        height: 48px;
+        align-items: center;
+        justify-content: center;
+        gap: 14px;
+        border-top: 1px solid #dfe6ee;
+        background: rgba(255,255,255,.97);
+        color: #53657b;
+        font-size: 11px;
+      }
+      .pager-button {
+        display: grid;
+        width: 32px;
+        height: 32px;
+        place-items: center;
+        border: 1px solid #d8e3ee;
+        border-radius: 50%;
+        background: #fff;
+        color: #5148a8;
+        cursor: pointer;
+      }
+      .pager-button:disabled { cursor: not-allowed; opacity: .38; }
+      ::highlight(active-passage) { background: var(--selection); color: inherit; }
+      .selection-overlay {
+        position: absolute;
+        z-index: 2;
+        border-radius: 3px;
+        background: var(--selection);
+        pointer-events: none;
+        mix-blend-mode: multiply;
+      }
+      .popover {
+        position: absolute;
+        z-index: 20;
+        display: none;
+        width: min(350px, calc(100% - 28px));
+        padding: 12px;
+        border: 1px solid #dfe3eb;
+        border-radius: 14px;
+        background: #fff;
+        box-shadow: 0 18px 50px rgba(20,29,47,.20);
+      }
+      .popover.visible { display: block; animation: rise .15s ease-out; }
+      @keyframes rise {
+        from { opacity: 0; transform: translateY(4px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      .popover-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 12px;
+        font-weight: 750;
+      }
+      .close {
+        display: grid;
+        width: 24px;
+        height: 24px;
+        padding: 0;
+        place-items: center;
+        border: 0;
+        border-radius: 7px;
+        background: transparent;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 18px;
+      }
+      .input-row { display: flex; align-items: flex-end; gap: 8px; }
+      textarea {
+        width: 100%;
+        min-height: 42px;
+        max-height: 82px;
+        resize: none;
+        padding: 10px 11px;
+        border: 1px solid #d7dce6;
+        border-radius: 10px;
+        outline: none;
+        color: var(--ink);
+        font-size: 14px;
+        line-height: 1.4;
+      }
+      textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(99,91,255,.12);
+      }
+      .send {
+        display: grid;
+        width: 42px;
+        height: 42px;
+        flex: 0 0 42px;
+        place-items: center;
+        border: 0;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        cursor: pointer;
+      }
+      .send:hover { background: var(--accent-dark); }
+      .send:disabled { cursor: not-allowed; opacity: .45; }
+      .help { margin: 7px 2px 0; color: var(--muted); font-size: 11px; }
+      @media (max-width: 700px) {
+        .viewer { height: 760px; }
+        .selection-hint { display: none; }
+        .workspace { height: 700px; grid-template-columns: 1fr; grid-template-rows: 105px minmax(0, 1fr); }
+        .library {
+          display: flex;
+          gap: 8px;
+          overflow-x: auto;
+          overflow-y: hidden;
+          padding: 9px 10px;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+        .library-heading { display: none; }
+        .document-card { min-width: 170px; margin: 0; }
+        .reader-footer { left: 0; }
+        .document-scroll { padding-inline: 8px; }
+      }
+    </style>
+  </head>
+  <body>
+    <section class="viewer" id="viewer">
+      <header class="filebar">
+        <div class="filebar-title">
+          <span class="file-icon" aria-hidden="true">▤</span>
+          <div class="title-wrap">
+            <p class="eyebrow">Document Viewer · PDF gốc</p>
+            <h1 id="document-title">Tài liệu học tập</h1>
+          </div>
+        </div>
+        <span class="selection-hint">Bôi đen để đặt câu hỏi</span>
+      </header>
+      <div class="workspace">
+        <aside class="library" id="library">
+          <p class="library-heading">Học liệu</p>
+        </aside>
+        <main class="reader">
+          <nav class="reader-toolbar" aria-label="Thanh công cụ tài liệu">
+            <span class="mode-label">Đọc &amp; chọn text</span>
+            <div class="tool-group">
+              <span class="page-status" id="page-status">Trang 1 / 1</span>
+              <button class="tool-button" id="zoom-out" type="button" aria-label="Thu nhỏ">−</button>
+              <span class="page-status" id="zoom-label">100%</span>
+              <button class="tool-button" id="zoom-in" type="button" aria-label="Phóng to">＋</button>
+            </div>
+          </nav>
+          <div class="document-scroll" id="document-scroll">
+            <article id="document" tabindex="0"></article>
+          </div>
+        </main>
+      </div>
+      <footer class="reader-footer">
+        <button class="pager-button" id="previous-page" type="button" aria-label="Trang trước">‹</button>
+        <span>Trang <strong id="footer-current-page">1</strong> / <span id="footer-total-pages">1</span></span>
+        <button class="pager-button" id="next-page" type="button" aria-label="Trang sau">›</button>
+      </footer>
+      <form class="popover" id="popover">
+        <div class="popover-label">
+          <span>Hỏi về đoạn này</span>
+          <button class="close" id="close" type="button" aria-label="Đóng">×</button>
+        </div>
+        <div class="input-row">
+          <textarea id="question" rows="1" placeholder="Nhập câu hỏi của bạn…" aria-label="Câu hỏi"></textarea>
+          <button class="send" id="send" type="submit" disabled aria-label="Gửi câu hỏi">➤</button>
+        </div>
+        <p class="help">Enter để gửi · Shift + Enter để xuống dòng</p>
+      </form>
+    </section>
+    <script>
+      const API_VERSION = 1;
+      const viewer = document.getElementById("viewer");
+      const library = document.getElementById("library");
+      const scroller = document.getElementById("document-scroll");
+      const article = document.getElementById("document");
+      const title = document.getElementById("document-title");
+      const popover = document.getElementById("popover");
+      const question = document.getElementById("question");
+      const defaultQuestionPlaceholder = question.placeholder;
+      const send = document.getElementById("send");
+      const pageStatus = document.getElementById("page-status");
+      const footerCurrentPage = document.getElementById("footer-current-page");
+      const footerTotalPages = document.getElementById("footer-total-pages");
+      const previousPage = document.getElementById("previous-page");
+      const nextPage = document.getElementById("next-page");
+      const zoomLabel = document.getElementById("zoom-label");
+
+      let activeDocumentId = "";
+      let selectedText = "";
+      let suggestedQuestion = "";
+      let selectedRange = null;
+      let selectedPageNumber = null;
+      let currentPage = 1;
+      let totalPages = 1;
+      let zoomLevel = 100;
+      let lastPayload = "";
+
+      function post(type, payload = {}) {
+        window.parent.postMessage({ isStreamlitMessage: true, type, ...payload }, "*");
+      }
+      function setFrameHeight() {
+        post("streamlit:setFrameHeight", { height: window.innerWidth <= 700 ? 776 : 736 });
+      }
+      function clearOverlayHighlight() {
+        viewer.querySelectorAll(".selection-overlay").forEach((node) => node.remove());
+      }
+      function hidePopover(clearBrowserSelection = false) {
+        popover.classList.remove("visible");
+        popover.style.visibility = "";
+        question.value = "";
+        question.placeholder = defaultQuestionPlaceholder;
+        suggestedQuestion = "";
+        send.disabled = true;
+        if (clearBrowserSelection) window.getSelection()?.removeAllRanges();
+      }
+      function clearActiveSelection() {
+        hidePopover(true);
+        window.CSS?.highlights?.delete("active-passage");
+        clearOverlayHighlight();
+        selectedText = "";
+        selectedRange = null;
+        selectedPageNumber = null;
+      }
+      function renderOverlayHighlight() {
+        clearOverlayHighlight();
+        if (!selectedRange) return;
+        const viewerRect = viewer.getBoundingClientRect();
+        selectedRange.getClientRects().forEach((rect) => {
+          if (!rect.width || !rect.height) return;
+          const overlay = document.createElement("span");
+          overlay.className = "selection-overlay";
+          overlay.style.left = `${rect.left - viewerRect.left}px`;
+          overlay.style.top = `${rect.top - viewerRect.top}px`;
+          overlay.style.width = `${rect.width}px`;
+          overlay.style.height = `${rect.height}px`;
+          viewer.appendChild(overlay);
+        });
+      }
+      function persistHighlight(range) {
+        selectedRange = range.cloneRange();
+        if (window.CSS?.highlights && window.Highlight) {
+          CSS.highlights.set("active-passage", new Highlight(selectedRange));
+          clearOverlayHighlight();
+        } else {
+          renderOverlayHighlight();
+        }
+      }
+      function positionPopover(rect) {
+        const viewerRect = viewer.getBoundingClientRect();
+        const scrollRect = scroller.getBoundingClientRect();
+        const width = Math.min(350, scrollRect.width - 24);
+        popover.style.width = `${width}px`;
+        const height = popover.offsetHeight || 142;
+        const left = Math.max(
+          scrollRect.left - viewerRect.left + 12,
+          Math.min(
+            rect.left - viewerRect.left + rect.width / 2 - width / 2,
+            scrollRect.right - viewerRect.left - width - 12,
+          ),
+        );
+        const below = rect.bottom - viewerRect.top + 10;
+        const top = below + height < scrollRect.bottom - viewerRect.top
+          ? below
+          : Math.max(scrollRect.top - viewerRect.top + 12, rect.top - viewerRect.top - height - 10);
+        popover.style.left = `${left}px`;
+        popover.style.top = `${top}px`;
+      }
+      function captureSelection() {
+        const selection = window.getSelection();
+        if (!selection || selection.isCollapsed || !selection.rangeCount) {
+          clearActiveSelection();
+          return;
+        }
+        const range = selection.getRangeAt(0);
+        if (!article.contains(range.commonAncestorContainer)) return;
+        const startNode = range.startContainer.nodeType === Node.ELEMENT_NODE
+          ? range.startContainer : range.startContainer.parentElement;
+        const endNode = range.endContainer.nodeType === Node.ELEMENT_NODE
+          ? range.endContainer : range.endContainer.parentElement;
+        const startCard = startNode?.closest(".page-card");
+        const endCard = endNode?.closest(".page-card");
+        if (!startCard || startCard !== endCard) {
+          clearActiveSelection();
+          return;
+        }
+        const startLayer = startNode?.closest(".text-layer");
+        const endLayer = endNode?.closest(".text-layer");
+        if (!startLayer || startLayer !== endLayer) {
+          clearActiveSelection();
+          return;
+        }
+        const text = selection.toString().replace(/\s+/g, " ").trim();
+        if (!text) return;
+        selectedText = text;
+        selectedPageNumber = Number(startCard.dataset.page);
+        persistHighlight(range);
+        popover.style.visibility = "hidden";
+        popover.classList.add("visible");
+        suggestedQuestion = `Gi\u1ea3i th\u00edch \u201c${text}\u201d`;
+        question.value = "";
+        question.placeholder = suggestedQuestion;
+        send.disabled = false;
+        requestAnimationFrame(() => {
+          positionPopover(selectedRange.getBoundingClientRect());
+          popover.style.visibility = "visible";
+          question.focus();
+        });
+      }
+      function updatePageIndicators(pageNumber) {
+        currentPage = Math.max(1, Math.min(Number(pageNumber) || 1, totalPages));
+        pageStatus.textContent = `Trang ${currentPage} / ${totalPages}`;
+        footerCurrentPage.textContent = currentPage;
+        footerTotalPages.textContent = totalPages;
+        previousPage.disabled = currentPage <= 1;
+        nextPage.disabled = currentPage >= totalPages;
+      }
+      function scrollToPage(pageNumber, behavior = "smooth") {
+        const target = article.querySelector(`.page-card[data-page="${pageNumber}"]`);
+        if (!target) return;
+        scroller.scrollTo({ top: Math.max(0, target.offsetTop - 64), behavior });
+        updatePageIndicators(pageNumber);
+      }
+      function detectCurrentPage() {
+        const scrollerRect = scroller.getBoundingClientRect();
+        let closestPage = currentPage;
+        let closestDistance = Number.POSITIVE_INFINITY;
+        article.querySelectorAll(".page-card").forEach((card) => {
+          const distance = Math.abs(card.getBoundingClientRect().top - scrollerRect.top - 18);
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestPage = Number(card.dataset.page);
+          }
+        });
+        updatePageIndicators(closestPage);
+      }
+      function setZoom(nextZoom) {
+        zoomLevel = Math.max(80, Math.min(130, nextZoom));
+        article.style.width = `${zoomLevel}%`;
+        zoomLabel.textContent = `${zoomLevel}%`;
+        requestAnimationFrame(syncTextLayers);
+      }
+      function syncTextLayers() {
+        article.querySelectorAll(".slide-canvas").forEach((canvas) => {
+          const layer = canvas.querySelector(".text-layer");
+          if (!layer) return;
+          const sourceWidth = Number(layer.dataset.sourceWidth) || 1;
+          layer.style.transform = `scale(${canvas.clientWidth / sourceWidth})`;
+        });
+      }
+      function renderLibrary(documents) {
+        library.querySelectorAll(".document-card").forEach((node) => node.remove());
+        (Array.isArray(documents) ? documents : []).forEach((item) => {
+          const documentId = String(item.document_id || item.course_id || "");
+          const card = document.createElement("button");
+          card.className = "document-card";
+          card.type = "button";
+          if (documentId === activeDocumentId) card.classList.add("active");
+          card.setAttribute("aria-pressed", card.classList.contains("active") ? "true" : "false");
+
+          const top = document.createElement("div");
+          top.className = "card-top";
+          const label = document.createElement("span");
+          label.className = "card-label";
+          label.textContent = String(item.day_label || "Tài liệu");
+          top.appendChild(label);
+          if (card.classList.contains("active")) {
+            const badge = document.createElement("span");
+            badge.className = "studying";
+            badge.textContent = "ĐANG HỌC";
+            top.appendChild(badge);
+          }
+          const name = document.createElement("strong");
+          name.className = "card-name";
+          name.textContent = String(item.name || "Tài liệu học tập");
+          const meta = document.createElement("div");
+          meta.className = "card-meta";
+          meta.textContent = `${Number(item.page_count) || 0} trang`;
+          card.append(top, name, meta);
+          card.addEventListener("click", () => {
+            if (!documentId || documentId === activeDocumentId) return;
+            post("streamlit:setComponentValue", {
+              value: {
+                event_id: `switch-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                action: "switch_document",
+                document_id: documentId,
+              },
+            });
+          });
+          library.appendChild(card);
+        });
+      }
+      function renderDocument(args) {
+        const payload = JSON.stringify([
+          args.title,
+          args.pages,
+          args.focus_page,
+          args.library_documents,
+          args.active_document_id,
+        ]);
+        if (payload === lastPayload) return;
+        lastPayload = payload;
+        clearActiveSelection();
+        activeDocumentId = String(args.active_document_id || "");
+        title.textContent = String(args.title || "Tài liệu học tập");
+        renderLibrary(args.library_documents);
+        article.replaceChildren();
+        const pages = Array.isArray(args.pages) ? args.pages : [];
+        totalPages = pages.length || Number(args.page_count) || 1;
+        pages.forEach((pageData, index) => {
+          const pageNumber = Number(pageData.page_number) || index + 1;
+          const pageCard = document.createElement("section");
+          pageCard.className = "page-card";
+          pageCard.dataset.page = pageNumber;
+          const meta = document.createElement("div");
+          meta.className = "page-meta";
+          const pageLabel = document.createElement("span");
+          pageLabel.textContent = `Trang ${pageNumber} / ${totalPages}`;
+          const fileLabel = document.createElement("span");
+          fileLabel.textContent = title.textContent;
+          meta.append(pageLabel, fileLabel);
+          pageCard.appendChild(meta);
+
+          if (pageData.image) {
+            const canvas = document.createElement("div");
+            canvas.className = "slide-canvas";
+            const image = document.createElement("img");
+            image.className = "slide-image";
+            image.src = String(pageData.image);
+            image.alt = `Trang PDF ${pageNumber}`;
+            image.draggable = false;
+            image.addEventListener("load", syncTextLayers, { once: true });
+            canvas.appendChild(image);
+            const layer = document.createElement("div");
+            layer.className = "text-layer";
+            layer.dataset.sourceWidth = Number(pageData.width) || 1;
+            layer.style.width = `${Number(pageData.width) || 1}px`;
+            layer.style.height = `${Number(pageData.height) || 1}px`;
+            (Array.isArray(pageData.words) ? pageData.words : []).forEach((word) => {
+              const wordNode = document.createElement("span");
+              const width = Math.max(1, Number(word.x1) - Number(word.x0));
+              const height = Math.max(1, Number(word.y1) - Number(word.y0));
+              wordNode.textContent = `${String(word.text || "")} `;
+              wordNode.style.left = `${Number(word.x0)}px`;
+              wordNode.style.top = `${Number(word.y0)}px`;
+              wordNode.style.minWidth = `${width}px`;
+              wordNode.style.height = `${height * 1.05}px`;
+              wordNode.style.fontSize = `${height * 0.88}px`;
+              layer.appendChild(wordNode);
+            });
+            canvas.appendChild(layer);
+            pageCard.appendChild(canvas);
+          } else {
+            const empty = document.createElement("div");
+            empty.className = "empty-page";
+            empty.textContent = "Không thể render trang PDF này.";
+            pageCard.appendChild(empty);
+          }
+          if (!String(pageData.text || "").trim()) {
+            const notice = document.createElement("div");
+            notice.className = "empty-page";
+            notice.style.minHeight = "34px";
+            notice.textContent = "Trang này không có text có thể chọn (OCR chưa được hỗ trợ).";
+            pageCard.appendChild(notice);
+          }
+          article.appendChild(pageCard);
+        });
+        setZoom(100);
+        updatePageIndicators(1);
+        const focusPage = Math.max(1, Math.min(Number(args.focus_page) || 1, totalPages));
+        const target = article.querySelector(`.page-card[data-page="${focusPage}"]`);
+        if (target) {
+          target.classList.add("focused");
+          requestAnimationFrame(() => scrollToPage(focusPage, "auto"));
+        }
+        requestAnimationFrame(syncTextLayers);
+      }
+
+      article.addEventListener("mouseup", () => setTimeout(captureSelection, 0));
+      article.addEventListener("keyup", () => setTimeout(captureSelection, 0));
+      scroller.addEventListener("scroll", () => {
+        if (popover.classList.contains("visible")) hidePopover(false);
+        if (!(window.CSS?.highlights && window.Highlight)) renderOverlayHighlight();
+        detectCurrentPage();
+      });
+      previousPage.addEventListener("click", () => scrollToPage(currentPage - 1));
+      nextPage.addEventListener("click", () => scrollToPage(currentPage + 1));
+      document.getElementById("zoom-out").addEventListener("click", () => setZoom(zoomLevel - 10));
+      document.getElementById("zoom-in").addEventListener("click", () => setZoom(zoomLevel + 10));
+      document.getElementById("close").addEventListener("click", clearActiveSelection);
+      question.addEventListener("input", () => {
+        send.disabled = !question.value.trim() && !suggestedQuestion;
+        question.style.height = "auto";
+        question.style.height = `${Math.min(question.scrollHeight, 82)}px`;
+      });
+      question.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" && !event.shiftKey) {
+          event.preventDefault();
+          if (question.value.trim() || suggestedQuestion) popover.requestSubmit();
+        }
+      });
+      popover.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const text = question.value.trim() || suggestedQuestion;
+        if (!text || !selectedText || !selectedPageNumber || !activeDocumentId) return;
+        post("streamlit:setComponentValue", {
+          value: {
+            event_id: `question-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            document_id: activeDocumentId,
+            page_number: selectedPageNumber,
+            page: selectedPageNumber,
+            selected_text: selectedText,
+            question: text,
+          },
+        });
+        clearActiveSelection();
+      });
+      window.addEventListener("contextmenu", (event) => {
+        if (popover.contains(event.target)) return;
+        if (selectedText || selectedRange || popover.classList.contains("visible")) {
+          clearActiveSelection();
+        }
+      });
+      window.addEventListener("mousedown", (event) => {
+        if (popover.contains(event.target)) return;
+        if (event.target.closest?.(".text-layer span")) return;
+        if (selectedText || selectedRange || popover.classList.contains("visible")) {
+          clearActiveSelection();
+        }
+      });
+      window.addEventListener("resize", () => {
+        syncTextLayers();
+        setFrameHeight();
+        if (!(window.CSS?.highlights && window.Highlight)) renderOverlayHighlight();
+      });
+      window.addEventListener("message", (event) => {
+        if (event.data?.type !== "streamlit:render") return;
+        renderDocument(event.data.args || {});
+        setFrameHeight();
+      });
+      post("streamlit:componentReady", { apiVersion: API_VERSION });
+      setFrameHeight();
+    </script>
+  </body>
+</html>

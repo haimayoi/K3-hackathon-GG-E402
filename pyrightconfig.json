@@ -1,0 +1,11 @@
+{
+  "include": [
+    "app.py",
+    "codebase",
+    "eval",
+    "tests"
+  ],
+  "extraPaths": [
+    "./codebase"
+  ]
+}
